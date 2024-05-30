@@ -36,8 +36,11 @@ function draw() {
   drawObject("red", 150, groundLevel - 50, 50, 50);
 
   //GROUND
-
   drawObject("green", 0, groundLevel, window.innerWidth, 50);
+
+  //COORDS
+  ctx.fillText(`X: ${player_pos.x}`, 10, 20);
+  ctx.fillText(`Y: ${player_pos.y}`, 10, 40);
 }
 
 function drawObject(style, x, y, w, h) {
