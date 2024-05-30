@@ -43,7 +43,7 @@ const player = new Object({
   id: 0,
   color: "blue",
   x: window.innerWidth / 2,
-  y: groundLevel - playerHeight,
+  y: groundLevel - playerHeight - 200,
   w: 50,
   h: playerHeight,
 });
@@ -52,8 +52,18 @@ const objects = [
   new Object({
     id: 1,
     color: "red",
-    x: 150,
+    // x: 150,
+    x: window.innerWidth / 2,
     y: groundLevel - 50,
+    w: 50,
+    h: 50,
+  }),
+  new Object({
+    id: 3,
+    color: "yellow",
+    // x: 150,
+    x: window.innerWidth / 2 - 200,
+    y: groundLevel - 100,
     w: 50,
     h: 50,
   }),
@@ -75,8 +85,10 @@ function draw() {
   }
 
   //COORDS
-  ctx.fillText(`X: ${player.pos.x}`, 10, 20);
-  ctx.fillText(`Y: ${-player.pos.y + groundLevel - playerHeight}`, 10, 40);
+  ctx.fillText(`P_X: ${player.pos.x}`, 10, 20);
+  ctx.fillText(`P_Y: ${-player.pos.y + groundLevel - playerHeight}`, 10, 40);
+  ctx.fillText(`C_X: ${CAMERA.x}`, 10, 60);
+  ctx.fillText(`C_Y: ${CAMERA.y}`, 10, 80);
 }
 
 function drawObject(style, x, y, w, h) {
@@ -87,16 +99,60 @@ function drawObject(style, x, y, w, h) {
 //Reason why it's separate from draw: Because in here, it calculates without being affected by the fps!
 function calculate() {
   //GRAVITY
-  if (player.pos.y < groundLevel - playerHeight - velocity.y) {
+  // if (player.pos.y < groundLevel - playerHeight - velocity.y - gravity) {
+  //   velocity.y = velocity.y + gravity;
+  // } else {
+  //   velocity.y = 0;
+  //   player.pos.y = groundLevel - playerHeight;
+  // }
+
+  //COLLISION
+  let isStopped = [];
+  let l = [],
+    r = [];
+  let y;
+  let bottomBlock;
+  for (let i = 1; i < objects.length; i++) {
+    const object = objects[i];
+    //BOTTOM
+    bottomBlock =
+      player.pos.y < object.pos.y - playerHeight - velocity.y - gravity;
+    const rightBlock = player.pos.x > object.pos.x + object.width;
+    const leftBlock = player.pos.x + player.width < object.pos.x;
+    if (bottomBlock || rightBlock || leftBlock) {
+      isStopped.push(false);
+    } else {
+      isStopped.push(true);
+      y = object.pos.y;
+    }
+    r.push(object.pos.x);
+    l.push(object.pos.x + object.width);
+  }
+  let isFall = !isStopped.includes(true) ? true : false;
+  r = r.sort((x, y) => x - y).filter((x) => x > player.pos.x);
+  const closestR = r.length === 0 ? false : Math.min(...r);
+  l.sort((x, y) => x - y);
+  l = l.sort((x, y) => x - y).filter((x) => x < player.pos.x + player.width);
+  const closestL = l.length === 0 ? false : Math.max(...l);
+
+  const canMoveRight =
+    closestR === false
+      ? true
+      : player.pos.x + player.width + velocity.x < closestR;
+  const canMoveLeft =
+    closestL === false ? true : player.pos.x + velocity.x > closestL;
+
+  if (isFall) {
     velocity.y = velocity.y + gravity;
   } else {
     velocity.y = 0;
-    // player.pos.y = groundLevel - playerHeight;
+    player.pos.y = y - playerHeight;
   }
   //REGISTERING MOVEMENT
   player.pos.x = player.pos.x + velocity.x;
   player.pos.y = player.pos.y + velocity.y;
-  CAMERA.x = CAMERA.x + velocity.x;
+  // CAMERA.x = CAMERA.x + velocity.x;
+  CAMERA.x = -(window.innerWidth / 2 - player.pos.x - 25);
   //SLOWING DOWN X (NOT TO GO FOREVER)
   if (velocity.x < 0) {
     velocity.x++;
@@ -107,16 +163,25 @@ function calculate() {
 
   //KEY ACTIONS HERE!!!
   if (keyPressed["Space"] || keyPressed["KeyW"]) {
-    if (player.pos.y === groundLevel - playerHeight) {
+    if (!isFall) {
       velocity.y = velocity.y - 30;
     }
   }
 
-  if (keyPressed["KeyD"]) {
+  // console.log(closestR);
+  if (keyPressed["KeyD"] && (canMoveRight || bottomBlock)) {
     velocity.x = moveSpeed;
   }
-  if (keyPressed["KeyA"]) {
+  if (keyPressed["KeyA"] && (canMoveLeft || bottomBlock)) {
     velocity.x = -moveSpeed;
+  }
+  if (!canMoveRight && !bottomBlock && velocity.x > 0) {
+    velocity.x = 0;
+    player.pos.x = closestR - player.width;
+  }
+  if (!canMoveLeft && !bottomBlock && velocity.x < 0) {
+    velocity.x = 0;
+    player.pos.x = closestL;
   }
 }
 
