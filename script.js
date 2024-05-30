@@ -20,27 +20,63 @@ class Vector2D {
     this.y = y;
   }
 }
-const player_pos = new Vector2D(
-  window.innerWidth / 2,
-  groundLevel - playerHeight
-);
 const CAMERA = new Vector2D(0, 0);
 const velocity = new Vector2D(0, 0);
 
+class Object {
+  constructor({
+    id = Date.now(),
+    color = "black",
+    x = 0,
+    y = 0,
+    w = 50,
+    h = 50,
+  }) {
+    this.id = id;
+    this.color = color;
+    this.pos = new Vector2D(x, y);
+    this.width = w;
+    this.height = h;
+  }
+}
+const player = new Object({
+  id: 0,
+  color: "blue",
+  x: window.innerWidth / 2,
+  y: groundLevel - playerHeight,
+  w: 50,
+  h: playerHeight,
+});
+const objects = [
+  player,
+  new Object({
+    id: 1,
+    color: "red",
+    x: 150,
+    y: groundLevel - 50,
+    w: 50,
+    h: 50,
+  }),
+  new Object({
+    id: 2,
+    color: "green",
+    x: 0,
+    y: groundLevel,
+    w: window.innerWidth,
+    h: 50,
+  }),
+];
+
 //ONLY FOR DRAWING NOT CALCULING!!! CALCULATIONS ARE FOR THE TICKS TO DECIDE NOT THE FPS
 function draw() {
-  //DRAW
-  drawObject("blue", player_pos.x, player_pos.y, 50, playerHeight);
-
-  //TEST OBJECT
-  drawObject("red", 150, groundLevel - 50, 50, 50);
-
-  //GROUND
-  drawObject("green", 0, groundLevel, window.innerWidth, 50);
+  for (let object of objects) {
+    const { color, pos, width, height } = object;
+    drawObject(color, pos.x, pos.y, width, height);
+  }
 
   //COORDS
-  ctx.fillText(`X: ${player_pos.x}`, 10, 20);
-  ctx.fillText(`Y: ${-player_pos.y + groundLevel - playerHeight}`, 10, 40);
+  ctx.fillText(`X: ${player.pos.x}`, 10, 20);
+  ctx.fillText(`Y: ${-player.pos.y + groundLevel - playerHeight}`, 10, 40);
 }
 
 function drawObject(style, x, y, w, h) {
@@ -51,15 +87,15 @@ function drawObject(style, x, y, w, h) {
 //Reason why it's separate from draw: Because in here, it calculates without being affected by the fps!
 function calculate() {
   //GRAVITY
-  if (player_pos.y < groundLevel - playerHeight - velocity.y) {
+  if (player.pos.y < groundLevel - playerHeight - velocity.y) {
     velocity.y = velocity.y + gravity;
   } else {
     velocity.y = 0;
-    // player_pos.y = groundLevel - playerHeight;
+    // player.pos.y = groundLevel - playerHeight;
   }
   //REGISTERING MOVEMENT
-  player_pos.x = player_pos.x + velocity.x;
-  player_pos.y = player_pos.y + velocity.y;
+  player.pos.x = player.pos.x + velocity.x;
+  player.pos.y = player.pos.y + velocity.y;
   CAMERA.x = CAMERA.x + velocity.x;
   //SLOWING DOWN X (NOT TO GO FOREVER)
   if (velocity.x < 0) {
@@ -71,7 +107,7 @@ function calculate() {
 
   //KEY ACTIONS HERE!!!
   if (keyPressed["Space"] || keyPressed["KeyW"]) {
-    if (player_pos.y === groundLevel - playerHeight) {
+    if (player.pos.y === groundLevel - playerHeight) {
       velocity.y = velocity.y - 30;
     }
   }
