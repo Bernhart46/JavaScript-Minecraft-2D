@@ -53,13 +53,13 @@ function calculate() {
   //GRAVITY
   if (player_pos.y < groundLevel - playerHeight - velocity.y) {
     velocity.y = velocity.y + gravity;
-    player_pos.y = player_pos.y + velocity.y;
   } else {
     velocity.y = 0;
-    player_pos.y = groundLevel - playerHeight;
+    // player_pos.y = groundLevel - playerHeight;
   }
-  //REGISTERING X MOVEMENT
+  //REGISTERING MOVEMENT
   player_pos.x = player_pos.x + velocity.x;
+  player_pos.y = player_pos.y + velocity.y;
   CAMERA.x = CAMERA.x + velocity.x;
   //SLOWING DOWN X (NOT TO GO FOREVER)
   if (velocity.x < 0) {
