@@ -99,14 +99,6 @@ function drawObject(style, x, y, w, h) {
 
 //Reason why it's separate from draw: Because in here, it calculates without being affected by the fps!
 function calculate() {
-  //GRAVITY
-  // if (player.pos.y < groundLevel - playerHeight - velocity.y - gravity) {
-  //   velocity.y = velocity.y + gravity;
-  // } else {
-  //   velocity.y = 0;
-  //   player.pos.y = groundLevel - playerHeight;
-  // }
-
   //COLLISION
   let isStopped = [];
   let l = [],
@@ -152,7 +144,6 @@ function calculate() {
   //REGISTERING MOVEMENT
   player.pos.x = player.pos.x + velocity.x;
   player.pos.y = player.pos.y + velocity.y;
-  // CAMERA.x = CAMERA.x + velocity.x;
   CAMERA.x = -(window.innerWidth / 2 - player.pos.x - 25);
   //SLOWING DOWN X (NOT TO GO FOREVER)
   if (velocity.x < 0) {
