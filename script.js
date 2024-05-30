@@ -24,16 +24,25 @@ const player_pos = new Vector2D(
   window.innerWidth / 2,
   groundLevel - playerHeight
 );
+const CAMERA = new Vector2D(0, 0);
 const velocity = new Vector2D(0, 0);
 
 //ONLY FOR DRAWING NOT CALCULING!!! CALCULATIONS ARE FOR THE TICKS TO DECIDE NOT THE FPS
 function draw() {
   //DRAW
-  ctx.fillStyle = "blue";
-  ctx.fillRect(player_pos.x, player_pos.y, 50, playerHeight);
+  drawObject("blue", player_pos.x, player_pos.y, 50, playerHeight);
 
-  ctx.fillStyle = "green";
-  ctx.fillRect(0, groundLevel, window.innerWidth, 50);
+  //TEST OBJECT
+  drawObject("red", 150, groundLevel - 50, 50, 50);
+
+  //GROUND
+
+  drawObject("green", 0, groundLevel, window.innerWidth, 50);
+}
+
+function drawObject(style, x, y, w, h) {
+  ctx.fillStyle = style;
+  ctx.fillRect(x - CAMERA.x, y, w, h);
 }
 
 //Reason why it's separate from draw: Because in here, it calculates without being affected by the fps!
@@ -48,6 +57,7 @@ function calculate() {
   }
   //REGISTERING X MOVEMENT
   player_pos.x = player_pos.x + velocity.x;
+  CAMERA.x = CAMERA.x + velocity.x;
   //SLOWING DOWN X (NOT TO GO FOREVER)
   if (velocity.x < 0) {
     velocity.x++;
@@ -57,7 +67,7 @@ function calculate() {
   }
 
   //KEY ACTIONS HERE!!!
-  if (keyPressed["Space"]) {
+  if (keyPressed["Space"] || keyPressed["KeyW"]) {
     if (player_pos.y === groundLevel - playerHeight) {
       velocity.y = velocity.y - 30;
     }
