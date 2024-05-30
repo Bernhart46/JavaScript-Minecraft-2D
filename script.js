@@ -40,7 +40,7 @@ function draw() {
 
   //COORDS
   ctx.fillText(`X: ${player_pos.x}`, 10, 20);
-  ctx.fillText(`Y: ${player_pos.y}`, 10, 40);
+  ctx.fillText(`Y: ${-player_pos.y + groundLevel - playerHeight}`, 10, 40);
 }
 
 function drawObject(style, x, y, w, h) {
