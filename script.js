@@ -62,7 +62,7 @@ const objects = [
     id: 3,
     color: "yellow",
     // x: 150,
-    x: window.innerWidth / 2 - 200,
+    x: 250,
     y: groundLevel - 100,
     w: 50,
     h: 50,
@@ -89,6 +89,7 @@ function draw() {
   ctx.fillText(`P_Y: ${-player.pos.y + groundLevel - playerHeight}`, 10, 40);
   ctx.fillText(`C_X: ${CAMERA.x}`, 10, 60);
   ctx.fillText(`C_Y: ${CAMERA.y}`, 10, 80);
+  ctx.fillText(`Controls: A,S,D + W or Space`, 10, 100);
 }
 
 function drawObject(style, x, y, w, h) {
@@ -116,7 +117,7 @@ function calculate() {
     const object = objects[i];
     //BOTTOM
     bottomBlock =
-      player.pos.y < object.pos.y - playerHeight - velocity.y - gravity;
+      player.pos.y < object.pos.y - playerHeight - velocity.y - gravity - 1;
     const rightBlock = player.pos.x > object.pos.x + object.width;
     const leftBlock = player.pos.x + player.width < object.pos.x;
     if (bottomBlock || rightBlock || leftBlock) {
@@ -138,15 +139,15 @@ function calculate() {
   const canMoveRight =
     closestR === false
       ? true
-      : player.pos.x + player.width + velocity.x < closestR;
+      : player.pos.x + player.width + velocity.x + 1 < closestR;
   const canMoveLeft =
-    closestL === false ? true : player.pos.x + velocity.x > closestL;
+    closestL === false ? true : player.pos.x + velocity.x - 1 > closestL;
 
   if (isFall) {
     velocity.y = velocity.y + gravity;
   } else {
     velocity.y = 0;
-    player.pos.y = y - playerHeight;
+    player.pos.y = y - playerHeight - 1;
   }
   //REGISTERING MOVEMENT
   player.pos.x = player.pos.x + velocity.x;
@@ -168,7 +169,7 @@ function calculate() {
     }
   }
 
-  // console.log(closestR);
+  // console.log(canMoveRight);
   if (keyPressed["KeyD"] && (canMoveRight || bottomBlock)) {
     velocity.x = moveSpeed;
   }
@@ -177,11 +178,11 @@ function calculate() {
   }
   if (!canMoveRight && !bottomBlock && velocity.x > 0) {
     velocity.x = 0;
-    player.pos.x = closestR - player.width;
+    player.pos.x = closestR - player.width - 1;
   }
   if (!canMoveLeft && !bottomBlock && velocity.x < 0) {
     velocity.x = 0;
-    player.pos.x = closestL;
+    player.pos.x = closestL + 1;
   }
 }
 
