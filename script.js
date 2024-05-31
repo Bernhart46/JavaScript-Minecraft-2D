@@ -32,18 +32,18 @@ function calculate() {
   const playerTop = player.pos.y + velocity.y;
   for (let obj of objects) {
     const isCollidedY =
-      obj.pos.y <= playerBottom && playerTop <= obj.pos.y + obj.height;
+      obj.pos.y <= playerBottom && playerTop < obj.pos.y + obj.height;
     const isCollidedTopX =
-      player.pos.x + player.width - 5 >= obj.pos.x &&
-      obj.pos.x + obj.width >= player.pos.x + 5;
+      player.pos.x + player.width > obj.pos.x &&
+      obj.pos.x + obj.width > player.pos.x;
     const isUnder = player.pos.y >= obj.pos.y + obj.height;
     const isAbove = player.pos.y + player.height <= obj.pos.y;
     const isCollidedLeft =
-      player.pos.x + player.width + 5 >= obj.pos.x &&
-      player.pos.x + player.width + 5 <= obj.pos.x + obj.width;
+      player.pos.x + player.width + moveSpeed > obj.pos.x &&
+      player.pos.x + player.width + moveSpeed < obj.pos.x + obj.width;
     const isCollidedRight =
-      player.pos.x - 5 <= obj.pos.x + obj.width &&
-      player.pos.x - 5 >= obj.pos.x;
+      player.pos.x - moveSpeed < obj.pos.x + obj.width &&
+      player.pos.x - moveSpeed > obj.pos.x;
 
     if (isCollidedY && isCollidedTopX) {
       stopTopY = obj.pos.y;
@@ -64,7 +64,6 @@ function calculate() {
     velocity.y = 0;
     player.pos.y = stopTopY - player.height - velocity.y;
   }
-
   //KEY ACTIONS HERE!!!
   if (keyPressed["Space"] || keyPressed["KeyW"]) {
     if (!isNaN(stopTopY)) {
@@ -72,24 +71,25 @@ function calculate() {
     }
   }
   if (keyPressed["KeyD"]) {
-    if (!stopLeftX) {
-      velocity.x = moveSpeed;
-    } else {
-      velocity.x = 0;
-      player.pos.x = stopLeftX - player.width - velocity.x;
-    }
+    velocity.x = moveSpeed;
   }
   if (keyPressed["KeyA"]) {
-    if (!stopRightX) {
-      velocity.x = -moveSpeed;
-    } else {
+    velocity.x = -moveSpeed;
+  }
+
+  if (velocity.x !== 0) {
+    if (stopLeftX && velocity.x > 0) {
+      player.pos.x = stopLeftX - player.width;
       velocity.x = 0;
-      player.pos.x = stopRightX - velocity.x;
+    }
+    if (stopRightX && velocity.x < 0) {
+      player.pos.x = stopRightX;
+      velocity.x = 0;
     }
   }
-  player.pos.x += velocity.x;
 
   //REGISTERING MOVEMENT
+  player.pos.x += velocity.x;
   CAMERA.x = -(window.innerWidth / zoom / 2 - player.pos.x - player.width / 2);
   CAMERA.y = -(
     window.innerHeight / zoom / 2 -
