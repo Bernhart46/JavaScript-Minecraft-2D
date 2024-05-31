@@ -34,10 +34,10 @@ function calculate() {
     const isCollidedY =
       obj.pos.y <= playerBottom && playerTop <= obj.pos.y + obj.height;
     const isCollidedTopX =
-      player.pos.x + player.width >= obj.pos.x &&
-      obj.pos.x + obj.width >= player.pos.x;
-    const isUnder = player.pos.y >= obj.pos.y + obj.height;
-    const isAbove = player.pos.y + player.height <= obj.pos.y;
+      player.pos.x + player.width - 5 >= obj.pos.x &&
+      obj.pos.x + obj.width >= player.pos.x + 5;
+    const isUnder = player.pos.y >= obj.pos.y + obj.height + 1;
+    const isAbove = player.pos.y + player.height <= obj.pos.y - 1;
     const isCollidedLeft =
       player.pos.x + player.width + 5 >= obj.pos.x &&
       player.pos.x + player.width + 5 <= obj.pos.x + obj.width;
@@ -56,7 +56,6 @@ function calculate() {
     if (isCollidedRight && !isAbove && !isUnder) {
       stopRightX = obj.pos.x + obj.width;
     }
-    console.log(stopLeftX, stopRightX);
   }
   if (!stopTopY && !stopTopX) {
     velocity.y += gravity;
