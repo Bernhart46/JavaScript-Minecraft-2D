@@ -43,7 +43,7 @@ export const objects = [
     color: "yellow",
     // x: 150,
     x: 250,
-    y: groundLevel - 170,
+    y: groundLevel - 120,
     w: 50,
     h: 50,
   }),

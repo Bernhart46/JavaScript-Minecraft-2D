@@ -12,7 +12,7 @@ let zoom = 1;
 
 export let groundLevel = window.innerHeight - 50;
 const gravity = 3;
-const moveSpeed = 10;
+const moveSpeed = 8;
 export const playerHeight = 100;
 
 canvas.setAttribute("width", window.innerWidth);
@@ -27,6 +27,7 @@ function calculate() {
   let stopTopY;
   let stopTopX;
   let stopLeftX;
+  let stopRightX;
   const playerBottom = player.pos.y + player.height + velocity.y + 1;
   const playerTop = player.pos.y + velocity.y + 1;
   for (let obj of objects) {
@@ -35,38 +36,36 @@ function calculate() {
     const isCollidedTopX =
       player.pos.x + player.width >= obj.pos.x &&
       obj.pos.x + obj.width >= player.pos.x;
+    const isUnder = player.pos.y >= obj.pos.y + obj.height;
+    const isAbove = player.pos.y + player.height <= obj.pos.y;
+    const isCollidedLeft =
+      player.pos.x + player.width + 5 >= obj.pos.x &&
+      player.pos.x + player.width + 5 <= obj.pos.x + obj.width;
+    const isCollidedRight =
+      player.pos.x - 5 <= obj.pos.x + obj.width &&
+      player.pos.x - 5 >= obj.pos.x;
 
     if (isCollidedY && isCollidedTopX) {
       stopTopY = obj.pos.y;
       stopTopX = obj.pos.x;
     }
+
+    if (isCollidedLeft && !isAbove && !isUnder) {
+      stopLeftX = obj.pos.x;
+    }
+    if (isCollidedRight && !isAbove && !isUnder) {
+      stopRightX = obj.pos.x + obj.width;
+    }
+    console.log(stopLeftX, stopRightX);
   }
-  console.log(stopLeftX);
   if (!stopTopY && !stopTopX) {
     velocity.y += gravity;
+    player.pos.y += velocity.y;
   } else {
     if (!keyPressed["Space"]) {
       velocity.y = 0;
     }
     player.pos.y = stopTopY - player.height - velocity.y - 1;
-  }
-
-  //REGISTERING MOVEMENT
-  player.pos.x += velocity.x;
-  player.pos.y += velocity.y;
-  CAMERA.x = -(window.innerWidth / zoom / 2 - player.pos.x - player.width / 2);
-  CAMERA.y = -(
-    window.innerHeight / zoom / 2 -
-    player.pos.y -
-    player.height / 2
-  );
-
-  //SLOWING DOWN X (NOT TO GO FOREVER)
-  if (velocity.x < 0) {
-    velocity.x++;
-  }
-  if (velocity.x > 0) {
-    velocity.x--;
   }
 
   //KEY ACTIONS HERE!!!
@@ -76,15 +75,37 @@ function calculate() {
     }
   }
   if (keyPressed["KeyD"]) {
-    if (true) {
+    if (!stopLeftX) {
       velocity.x = moveSpeed;
     } else {
       velocity.x = 0;
-      player.pos.x = stopLeftX - player.width - velocity.x;
+      player.pos.x = stopLeftX - player.width - velocity.x - 1;
     }
   }
   if (keyPressed["KeyA"]) {
-    velocity.x = -moveSpeed;
+    if (!stopRightX) {
+      velocity.x = -moveSpeed;
+    } else {
+      velocity.x = 0;
+      player.pos.x = stopRightX - velocity.x + 1;
+    }
+  }
+  player.pos.x += velocity.x;
+
+  //REGISTERING MOVEMENT
+  CAMERA.x = -(window.innerWidth / zoom / 2 - player.pos.x - player.width / 2);
+  CAMERA.y = -(
+    window.innerHeight / zoom / 2 -
+    player.pos.y -
+    player.height / 2
+  );
+
+  //SLOWING DOWN X (NOT TO GO FOREVER)
+  if (velocity.x < 0) {
+    velocity.x += 1;
+  }
+  if (velocity.x > 0) {
+    velocity.x -= 1;
   }
 }
 
