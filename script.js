@@ -28,16 +28,16 @@ function calculate() {
   let stopTopX;
   let stopLeftX;
   let stopRightX;
-  const playerBottom = player.pos.y + player.height + velocity.y + 1;
-  const playerTop = player.pos.y + velocity.y + 1;
+  const playerBottom = player.pos.y + player.height + velocity.y;
+  const playerTop = player.pos.y + velocity.y;
   for (let obj of objects) {
     const isCollidedY =
       obj.pos.y <= playerBottom && playerTop <= obj.pos.y + obj.height;
     const isCollidedTopX =
       player.pos.x + player.width - 5 >= obj.pos.x &&
       obj.pos.x + obj.width >= player.pos.x + 5;
-    const isUnder = player.pos.y >= obj.pos.y + obj.height + 1;
-    const isAbove = player.pos.y + player.height <= obj.pos.y - 1;
+    const isUnder = player.pos.y >= obj.pos.y + obj.height;
+    const isAbove = player.pos.y + player.height <= obj.pos.y;
     const isCollidedLeft =
       player.pos.x + player.width + 5 >= obj.pos.x &&
       player.pos.x + player.width + 5 <= obj.pos.x + obj.width;
@@ -61,10 +61,8 @@ function calculate() {
     velocity.y += gravity;
     player.pos.y += velocity.y;
   } else {
-    if (!keyPressed["Space"]) {
-      velocity.y = 0;
-    }
-    player.pos.y = stopTopY - player.height - velocity.y - 1;
+    velocity.y = 0;
+    player.pos.y = stopTopY - player.height - velocity.y;
   }
 
   //KEY ACTIONS HERE!!!
@@ -78,7 +76,7 @@ function calculate() {
       velocity.x = moveSpeed;
     } else {
       velocity.x = 0;
-      player.pos.x = stopLeftX - player.width - velocity.x - 1;
+      player.pos.x = stopLeftX - player.width - velocity.x;
     }
   }
   if (keyPressed["KeyA"]) {
@@ -86,7 +84,7 @@ function calculate() {
       velocity.x = -moveSpeed;
     } else {
       velocity.x = 0;
-      player.pos.x = stopRightX - velocity.x + 1;
+      player.pos.x = stopRightX - velocity.x;
     }
   }
   player.pos.x += velocity.x;
