@@ -4,16 +4,17 @@ import { Vector2D } from "./vector2d.js";
 
 const canvas = document.querySelector("#myCanvas");
 export const ctx = canvas.getContext("2d");
-const fps = 30;
+const fps = 30; //Default: 30
 //Custom time
-const tickSpeed = 40;
+const tickSpeed = 50; //Default: 40
 const keyPressed = {};
-let zoom = 1;
+let zoom = 1; //Default : 1
 
 export let groundLevel = window.innerHeight - 50;
-const gravity = 3;
-const moveSpeed = 8;
-export const playerHeight = 100;
+const gravity = 3; //Default: 3
+const moveSpeed = 8; //Default: 8
+const jumpHeight = 30; //Default: 30
+export const playerHeight = 100; //Default: 100
 
 canvas.setAttribute("width", window.innerWidth);
 canvas.setAttribute("height", window.innerHeight);
@@ -23,69 +24,107 @@ const velocity = new Vector2D(0, 0);
 
 //Reason why it's separate from draw: Because in here, it calculates without being affected by the fps!
 function calculate() {
-  //COLLISION
-  let stopTopY;
-  let stopTopX;
-  let stopLeftX;
-  let stopRightX;
-  const playerBottom = player.pos.y + player.height + velocity.y;
-  const playerTop = player.pos.y + velocity.y;
+  //Stop coordinates
+  let tops = [];
+  let bottoms = [];
+  let lefts = [];
+  let rights = [];
+
+  const playerBottom = player.pos.y + player.height;
+  const playerTop = player.pos.y;
+  const playerLeft = player.pos.x;
+  const playerRight = player.pos.x + player.width;
+
   for (let obj of objects) {
-    const isCollidedY =
-      obj.pos.y <= playerBottom && playerTop < obj.pos.y + obj.height;
-    const isCollidedTopX =
-      player.pos.x + player.width > obj.pos.x &&
-      obj.pos.x + obj.width > player.pos.x;
-    const isUnder = player.pos.y >= obj.pos.y + obj.height;
-    const isAbove = player.pos.y + player.height <= obj.pos.y;
-    const isCollidedLeft =
-      player.pos.x + player.width + moveSpeed > obj.pos.x &&
-      player.pos.x + player.width + moveSpeed < obj.pos.x + obj.width;
-    const isCollidedRight =
-      player.pos.x - moveSpeed < obj.pos.x + obj.width &&
-      player.pos.x - moveSpeed > obj.pos.x;
+    const objBottom = obj.pos.y + obj.height;
+    const objTop = obj.pos.y;
+    const objLeft = obj.pos.x;
+    const objRight = obj.pos.x + obj.width;
 
-    if (isCollidedY && isCollidedTopX) {
-      stopTopY = obj.pos.y;
-      stopTopX = obj.pos.x;
-    }
+    const isAbove =
+      playerBottom <= objTop &&
+      playerBottom < objBottom &&
+      playerRight > objLeft &&
+      playerLeft < objRight;
 
-    if (isCollidedLeft && !isAbove && !isUnder) {
-      stopLeftX = obj.pos.x;
+    const isUnder =
+      playerTop >= objBottom &&
+      playerTop > objTop &&
+      playerRight > objLeft &&
+      playerLeft < objRight;
+
+    const isToRight =
+      playerLeft > objLeft && playerTop < objBottom && playerBottom > objTop;
+
+    const isToLeft =
+      playerRight < objRight && playerTop < objBottom && playerBottom > objTop;
+
+    if (isAbove) {
+      tops.push(objTop);
     }
-    if (isCollidedRight && !isAbove && !isUnder) {
-      stopRightX = obj.pos.x + obj.width;
+    if (isUnder) {
+      bottoms.push(objBottom);
+    }
+    if (isToRight) {
+      rights.push(objRight);
+    }
+    if (isToLeft) {
+      lefts.push(objLeft);
     }
   }
-  if (!stopTopY && !stopTopX) {
+
+  const closestTop = tops.length > 0 ? Math.min(...tops) : undefined;
+  const closestBottom = bottoms.length > 0 ? Math.max(...bottoms) : undefined;
+  const closestRight = rights.length > 0 ? Math.max(...rights) : undefined;
+  const closestLeft = lefts.length > 0 ? Math.min(...lefts) : undefined;
+
+  ///KEY ACTIONS HERE!!!
+  //Jump
+  if (keyPressed["Space"] || keyPressed["KeyW"]) {
+    if (playerBottom === closestTop && playerTop !== closestBottom) {
+      velocity.y -= jumpHeight;
+      //this is for preventing the player to jump "twice". Latency issue
+      player.pos.y = player.pos.y - 1;
+    }
+  }
+  //Move Right
+  if (keyPressed["KeyD"]) {
+    if (playerRight !== closestLeft) {
+      velocity.x = moveSpeed;
+    }
+  }
+  //Move Left
+  if (keyPressed["KeyA"]) {
+    if (playerLeft !== closestRight) {
+      velocity.x = -moveSpeed;
+    }
+  }
+  //Gravity | Falling
+  if (
+    playerBottom + velocity.y + gravity <= closestTop ||
+    closestTop === undefined
+  ) {
     velocity.y += gravity;
     player.pos.y += velocity.y;
   } else {
     velocity.y = 0;
-    player.pos.y = stopTopY - player.height - velocity.y;
+    player.pos.y = closestTop - player.height;
   }
-  //KEY ACTIONS HERE!!!
-  if (keyPressed["Space"] || keyPressed["KeyW"]) {
-    if (!isNaN(stopTopY)) {
-      velocity.y -= 30;
-    }
-  }
-  if (keyPressed["KeyD"]) {
-    velocity.x = moveSpeed;
-  }
-  if (keyPressed["KeyA"]) {
-    velocity.x = -moveSpeed;
+  //Roof hitting (player top hitting obj bottom)
+  if (playerTop + velocity.y <= closestBottom) {
+    velocity.y = 0;
+    player.pos.y = closestBottom;
   }
 
-  if (velocity.x !== 0) {
-    if (stopLeftX && velocity.x > 0) {
-      player.pos.x = stopLeftX - player.width;
-      velocity.x = 0;
-    }
-    if (stopRightX && velocity.x < 0) {
-      player.pos.x = stopRightX;
-      velocity.x = 0;
-    }
+  //PlayerRight hitting ObjLeft
+  if (playerRight + velocity.x >= closestLeft) {
+    velocity.x = 0;
+    player.pos.x = closestLeft - player.width;
+  }
+  //PlayerLeft hitting ObjRight
+  if (playerLeft + velocity.x <= closestRight) {
+    velocity.x = 0;
+    player.pos.x = closestRight;
   }
 
   //REGISTERING MOVEMENT
@@ -134,7 +173,11 @@ window.addEventListener("wheel", (e) => {
 });
 
 function gameTime() {
-  setInterval(calculate, 1000 / tickSpeed);
+  calculate();
+
+  setTimeout(() => {
+    requestAnimationFrame(gameTime);
+  }, 1000 / tickSpeed);
 }
 
 gameTime();
@@ -154,12 +197,19 @@ function draw() {
   }
 
   //COORDS
-  ctx.fillText(`P_X: ${player.pos.x}`, 10, 20);
-  ctx.fillText(`P_Y: ${-player.pos.y + groundLevel - playerHeight}`, 10, 40);
-  ctx.fillText(`C_X: ${CAMERA.x}`, 10, 60);
-  ctx.fillText(`C_Y: ${CAMERA.y}`, 10, 80);
-  ctx.fillText(`Zoom: ${zoom.toFixed(1)}`, 10, 100);
-  ctx.fillText(`Controls: A,S,D + W or Space`, 10, 120);
+  ctx.fillStyle = "black";
+  ctx.fillText(`Player_X: ${player.pos.x}`, 10, 20);
+  ctx.fillText(
+    `Player_Y: ${-player.pos.y + groundLevel - playerHeight}`,
+    10,
+    40
+  );
+  ctx.fillText(`Velocity_X: ${velocity.x}`, 10, 60);
+  ctx.fillText(`Velocity_Y: ${velocity.y}`, 10, 80);
+  ctx.fillText(`Camera_X: ${CAMERA.x.toFixed(1)}`, 10, 100);
+  ctx.fillText(`Camera_Y: ${CAMERA.y.toFixed(1)}`, 10, 120);
+  ctx.fillText(`Zoom: ${zoom.toFixed(1)}`, 10, 140);
+  ctx.fillText(`Controls: A,S,D + W or Space`, 10, 160);
 }
 
 function drawObject(style, x, y, w, h) {
