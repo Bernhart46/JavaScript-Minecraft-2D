@@ -173,11 +173,7 @@ window.addEventListener("wheel", (e) => {
 });
 
 function gameTime() {
-  calculate();
-
-  setTimeout(() => {
-    requestAnimationFrame(gameTime);
-  }, 1000 / tickSpeed);
+  setInterval(calculate, 1000 / tickSpeed);
 }
 
 gameTime();
