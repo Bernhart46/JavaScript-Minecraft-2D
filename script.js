@@ -65,6 +65,9 @@ window.addEventListener("keyup", (e) => {
   if (e.code === "F3") {
     isInfo = !isInfo;
   }
+  if (e.code === "F5") {
+    location.reload();
+  }
 
   delete keyPressed[e.code];
 });
