@@ -1,15 +1,18 @@
 "use script";
 import { objects as objO, player } from "./object.js";
 import { Vector2D } from "./vector2d.js";
-import { addObject, getObject, removeObject } from "./game/game.js";
+import { leftClick, rightClick, update } from "./game/game.js";
+import { formatTime } from "./utils/formatTime.js";
 
 const canvas = document.querySelector("#myCanvas");
 export const ctx = canvas.getContext("2d");
 const fps = 30; //Default: 30
 //Custom time
 const tickSpeed = 40; //Default: 40
-const keyPressed = {};
-let zoom = 1; //Default : 1
+export let time = 0;
+
+export const keyPressed = {};
+export let zoom = 1; //Default : 1
 
 const gravity = 3; //Default: 3
 const moveSpeed = 8; //Default: 8
@@ -19,11 +22,11 @@ export const playerHeight = 100; //Default: 100
 canvas.setAttribute("width", window.innerWidth);
 canvas.setAttribute("height", window.innerHeight);
 
-const CAMERA = new Vector2D(0, 0);
-const velocity = new Vector2D(0, 0);
-const origin = new Vector2D(0, 0);
-const mouse = new Vector2D(0, 0);
-const cursor = new Vector2D(0, 0);
+export const CAMERA = new Vector2D(0, 0);
+export const velocity = new Vector2D(0, 0);
+export const origin = new Vector2D(0, 0);
+export const mouse = new Vector2D(0, 0);
+export const cursor = new Vector2D(0, 0);
 
 //Reason why it's separate from draw: Because in here, it calculates without being affected by the fps!
 function calculate() {
@@ -50,6 +53,32 @@ window.addEventListener("resize", () => {
   canvas.setAttribute("height", window.innerHeight);
 });
 
+window.addEventListener("click", (e) => {
+  leftClick();
+});
+window.addEventListener("contextmenu", (e) => {
+  e.preventDefault();
+  rightClick();
+});
+
+window.addEventListener("mousedown", (e) => {
+  if (e.button === 0) {
+    keyPressed["mouseLeft"] = true;
+  }
+  if (e.button === 2) {
+    keyPressed["mouseRight"] = true;
+  }
+});
+
+window.addEventListener("mouseup", (e) => {
+  if (e.button === 0) {
+    delete keyPressed["mouseLeft"];
+  }
+  if (e.button === 2) {
+    delete keyPressed["mouseRight"];
+  }
+});
+
 window.addEventListener("wheel", (e) => {
   if (e.wheelDelta < 0) {
     if (zoom > 0.2) {
@@ -73,28 +102,12 @@ window.addEventListener("keypress", (e) => {
   player.pos.y = -200;
 });
 
-window.addEventListener("click", () => {
-  if (zoom !== 1) return;
-  const x = Math.round(cursor.x - origin.x);
-  const y = Math.round(cursor.y - origin.y);
-
-  const id = getObject(x, y)?.id;
-  if (id) {
-    removeObject(id);
-  }
-});
-
-window.addEventListener("contextmenu", (e) => {
-  e.preventDefault();
-  if (zoom !== 1) return;
-
-  const x = Math.round(cursor.x - origin.x);
-  const y = Math.round(cursor.y - origin.y);
-  addObject(x, y);
-});
-
 function gameTime() {
-  setInterval(calculate, 1000 / tickSpeed);
+  setInterval(() => {
+    calculate();
+    update();
+    time += 0.025;
+  }, 1000 / tickSpeed);
 }
 
 gameTime();
@@ -166,6 +179,8 @@ function drawInfo() {
   ctx.fillRect(10, 205, 150, 1);
   ctx.fillText(`Cursor_Block_X: ${cursor_block_x}`, 10, 220);
   ctx.fillText(`Cursor_Block_Y: ${-cursor_block_y}`, 10, 240);
+  ctx.fillRect(10, 245, 150, 1);
+  ctx.fillText(`Time: ${formatTime(time)}`, 10, 260);
 }
 
 function drawCursor() {
