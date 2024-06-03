@@ -8,7 +8,7 @@ import { getAlpha } from "./game/getAlpha.js";
 
 const canvas = document.querySelector("#myCanvas");
 export const ctx = canvas.getContext("2d");
-const fps = 60; //Default: 30
+const fps = 40; //Default: 30
 //Custom time
 const tickSpeed = 40; //Default: 40
 export let time = 6 * 60 * 60;
@@ -53,13 +53,19 @@ function calculate() {
 window.addEventListener("keydown", (e) => {
   e.preventDefault();
   keyPressed[e.code] = true;
+});
+
+window.addEventListener("keyup", (e) => {
+  if (e.code === "KeyR") {
+    velocity.y = 0;
+    player.pos.x = 50;
+    player.pos.y = -200;
+  }
 
   if (e.code === "F3") {
     isInfo = !isInfo;
   }
-});
 
-window.addEventListener("keyup", (e) => {
   delete keyPressed[e.code];
 });
 
@@ -108,14 +114,6 @@ window.addEventListener("wheel", (e) => {
 window.addEventListener("mousemove", (e) => {
   mouse.x = e.clientX;
   mouse.y = e.clientY;
-});
-
-window.addEventListener("keypress", (e) => {
-  if (e.code !== "KeyR") return;
-
-  velocity.y = 0;
-  player.pos.x = 50;
-  player.pos.y = -200;
 });
 
 function gameTime() {
