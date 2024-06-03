@@ -1,6 +1,7 @@
 "use script";
 import { objects as objO, player } from "./object.js";
 import { Vector2D } from "./vector2d.js";
+import { addObject, getObject, removeObject } from "./game/game.js";
 
 const canvas = document.querySelector("#myCanvas");
 export const ctx = canvas.getContext("2d");
@@ -72,6 +73,26 @@ window.addEventListener("keypress", (e) => {
   player.pos.y = -200;
 });
 
+window.addEventListener("click", () => {
+  if (zoom !== 1) return;
+  const x = Math.round(cursor.x - origin.x);
+  const y = Math.round(cursor.y - origin.y);
+
+  const id = getObject(x, y)?.id;
+  if (id) {
+    removeObject(id);
+  }
+});
+
+window.addEventListener("contextmenu", (e) => {
+  e.preventDefault();
+  if (zoom !== 1) return;
+
+  const x = Math.round(cursor.x - origin.x);
+  const y = Math.round(cursor.y - origin.y);
+  addObject(x, y);
+});
+
 function gameTime() {
   setInterval(calculate, 1000 / tickSpeed);
 }
@@ -93,13 +114,24 @@ function draw() {
 function drawObject(obj) {
   const { pos, width: w, height: h } = obj;
   const color = obj?.color;
-  ctx.fillStyle = color || "black";
-  ctx.fillRect(
-    pos.x * zoom - CAMERA.x * zoom,
-    pos.y * zoom - CAMERA.y * zoom,
-    w * zoom,
-    h * zoom
-  );
+  const image = obj?.image;
+  if (!image) {
+    ctx.fillStyle = color || "black";
+    ctx.fillRect(
+      pos.x * zoom - CAMERA.x * zoom,
+      pos.y * zoom - CAMERA.y * zoom,
+      w * zoom,
+      h * zoom
+    );
+  } else {
+    ctx.drawImage(
+      image,
+      pos.x * zoom - CAMERA.x * zoom,
+      pos.y * zoom - CAMERA.y * zoom,
+      w * zoom,
+      h * zoom
+    );
+  }
 }
 
 function drawInfo() {
