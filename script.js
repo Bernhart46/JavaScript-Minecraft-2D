@@ -3,13 +3,14 @@ import { objects as objO, player } from "./object.js";
 import { Vector2D } from "./vector2d.js";
 import { leftClick, rightClick, update } from "./game/game.js";
 import { formatTime } from "./utils/formatTime.js";
+import { getSkyColor } from "./game/getSkyColor.js";
 
 const canvas = document.querySelector("#myCanvas");
 export const ctx = canvas.getContext("2d");
 const fps = 30; //Default: 30
 //Custom time
 const tickSpeed = 40; //Default: 40
-export let time = 0;
+export let time = 6 * 60 * 60;
 
 export const keyPressed = {};
 export let zoom = 1; //Default : 1
@@ -106,8 +107,15 @@ function gameTime() {
   setInterval(() => {
     calculate();
     update();
-    time += 0.025;
   }, 1000 / tickSpeed);
+
+  setInterval(() => {
+    if (time + 60 >= 86400) {
+      time = 0;
+    } else {
+      time += 60;
+    }
+  }, 1000);
 }
 
 gameTime();
@@ -152,7 +160,11 @@ function drawInfo() {
   const cursor_block_y = Math.floor((cursor.y - origin.y) / 50);
 
   //COORDS
-  ctx.fillStyle = "black";
+  if (time <= 75000 && time >= 12000) {
+    ctx.fillStyle = "black";
+  } else {
+    ctx.fillStyle = "white";
+  }
   ctx.fillText(`Player_X: ${player.pos.x}`, 10, 20);
   ctx.fillText(`Player_Y: ${-player.pos.y - playerHeight}`, 10, 40);
   ctx.fillRect(10, 45, 150, 1);
@@ -202,7 +214,7 @@ function calculateCursor() {
 
 //ANIMATE (fps)
 function animate() {
-  ctx.fillStyle = "#82EEFD";
+  ctx.fillStyle = getSkyColor(time);
   ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
   draw();
   setTimeout(() => {
