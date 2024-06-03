@@ -4,6 +4,7 @@ import { Vector2D } from "./vector2d.js";
 import { leftClick, rightClick, update } from "./game/game.js";
 import { formatTime } from "./utils/formatTime.js";
 import { getSkyColor } from "./game/getSkyColor.js";
+import { getAlpha } from "./game/getAlpha.js";
 
 const canvas = document.querySelector("#myCanvas");
 export const ctx = canvas.getContext("2d");
@@ -147,6 +148,17 @@ function drawObject(obj) {
   } else {
     ctx.drawImage(
       image,
+      pos.x * zoom - CAMERA.x * zoom,
+      pos.y * zoom - CAMERA.y * zoom,
+      w * zoom,
+      h * zoom
+    );
+    //Shade of block
+
+    const a = getAlpha(time);
+
+    ctx.fillStyle = `rgba(0,0,0,${a})`;
+    ctx.fillRect(
       pos.x * zoom - CAMERA.x * zoom,
       pos.y * zoom - CAMERA.y * zoom,
       w * zoom,
