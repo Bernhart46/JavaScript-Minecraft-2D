@@ -8,7 +8,7 @@ import { getAlpha } from "./game/getAlpha.js";
 
 const canvas = document.querySelector("#myCanvas");
 export const ctx = canvas.getContext("2d");
-const fps = 30; //Default: 30
+const fps = 60; //Default: 30
 //Custom time
 const tickSpeed = 40; //Default: 40
 export let time = 6 * 60 * 60;
@@ -22,6 +22,7 @@ const jumpHeight = 30; //Default: 30
 export const playerHeight = 100; //Default: 100
 const reach = 6; //Default: 6
 export let canReach = false;
+let isInfo = true;
 
 let objects = []; //ARRAY FOR OBJECTS
 
@@ -50,7 +51,12 @@ function calculate() {
 
 //KEY EVENTS ONLY FOR REGISTERING, NOT ACTIVATING ACTIONS!!!
 window.addEventListener("keydown", (e) => {
+  e.preventDefault();
   keyPressed[e.code] = true;
+
+  if (e.code === "F3") {
+    isInfo = !isInfo;
+  }
 });
 
 window.addEventListener("keyup", (e) => {
@@ -196,6 +202,7 @@ function drawInfo() {
   }
   canReach = canReachx && canReachy;
 
+  if (!isInfo) return;
   //COORDS
   if (time <= 75000 && time >= 12000) {
     ctx.fillStyle = "black";
@@ -230,6 +237,8 @@ function drawInfo() {
   ctx.fillText(`Cursor_Block_Y: ${-cursor_block_y}`, 10, 240);
   ctx.fillRect(10, 245, 150, 1);
   ctx.fillText(`Time: ${formatTime(time)}`, 10, 260);
+  ctx.fillRect(10, 265, 150, 1);
+  ctx.fillText("You can turn this InfoBox off by pressing F3", 10, 280);
 }
 
 function drawCursor() {
