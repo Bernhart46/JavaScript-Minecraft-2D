@@ -1,16 +1,15 @@
 "use script";
-import { objects, player } from "./object.js";
+import { objects as objO, player } from "./object.js";
 import { Vector2D } from "./vector2d.js";
 
 const canvas = document.querySelector("#myCanvas");
 export const ctx = canvas.getContext("2d");
 const fps = 30; //Default: 30
 //Custom time
-const tickSpeed = 50; //Default: 40
+const tickSpeed = 40; //Default: 40
 const keyPressed = {};
 let zoom = 1; //Default : 1
 
-export let groundLevel = window.innerHeight - 50;
 const gravity = 3; //Default: 3
 const moveSpeed = 8; //Default: 8
 const jumpHeight = 30; //Default: 30
@@ -21,10 +20,152 @@ canvas.setAttribute("height", window.innerHeight);
 
 const CAMERA = new Vector2D(0, 0);
 const velocity = new Vector2D(0, 0);
+const origin = new Vector2D(0, 0);
+const mouse = new Vector2D(0, 0);
+const cursor = new Vector2D(0, 0);
 
 //Reason why it's separate from draw: Because in here, it calculates without being affected by the fps!
 function calculate() {
-  //Stop coordinates
+  origin.x = 0 - CAMERA.x;
+  origin.y = 0 - CAMERA.y;
+  calculateCursor();
+
+  calculateCollisions();
+  calculateCamera();
+}
+
+//KEY EVENTS ONLY FOR REGISTERING, NOT ACTIVATING ACTIONS!!!
+window.addEventListener("keydown", (e) => {
+  keyPressed[e.code] = true;
+});
+
+window.addEventListener("keyup", (e) => {
+  delete keyPressed[e.code];
+});
+
+//RESIZE EVENT
+window.addEventListener("resize", () => {
+  canvas.setAttribute("width", window.innerWidth);
+  canvas.setAttribute("height", window.innerHeight);
+});
+
+window.addEventListener("wheel", (e) => {
+  if (e.wheelDelta < 0) {
+    if (zoom > 0.2) {
+      zoom -= 0.1;
+    }
+  } else {
+    zoom += 0.1;
+  }
+});
+
+window.addEventListener("mousemove", (e) => {
+  mouse.x = e.clientX;
+  mouse.y = e.clientY;
+});
+
+window.addEventListener("keypress", (e) => {
+  if (e.code !== "KeyR") return;
+
+  velocity.y = 0;
+  player.pos.x = 50;
+  player.pos.y = -200;
+});
+
+function gameTime() {
+  setInterval(calculate, 1000 / tickSpeed);
+}
+
+gameTime();
+
+//ONLY FOR DRAWING NOT CALCULING!!! CALCULATIONS ARE FOR THE TICKS TO DECIDE NOT THE FPS
+function draw() {
+  const objects = objO.content;
+  drawObject(player);
+  for (let object of objects) {
+    drawObject(object);
+  }
+
+  drawInfo();
+  drawCursor();
+}
+
+function drawObject(obj) {
+  const { pos, width: w, height: h } = obj;
+  const color = obj?.color;
+  ctx.fillStyle = color || "black";
+  ctx.fillRect(
+    pos.x * zoom - CAMERA.x * zoom,
+    pos.y * zoom - CAMERA.y * zoom,
+    w * zoom,
+    h * zoom
+  );
+}
+
+function drawInfo() {
+  const cursor_block_x = Math.floor((cursor.x - origin.x) / 50);
+  const cursor_block_y = Math.floor((cursor.y - origin.y) / 50);
+
+  //COORDS
+  ctx.fillStyle = "black";
+  ctx.fillText(`Player_X: ${player.pos.x}`, 10, 20);
+  ctx.fillText(`Player_Y: ${-player.pos.y - playerHeight}`, 10, 40);
+  ctx.fillRect(10, 45, 150, 1);
+  ctx.fillText(`Velocity_X: ${velocity.x}`, 10, 60);
+  ctx.fillText(`Velocity_Y: ${velocity.y}`, 10, 80);
+  ctx.fillRect(10, 85, 150, 1);
+  ctx.fillText(`Camera_X: ${CAMERA.x.toFixed(1)}`, 10, 100);
+  ctx.fillText(`Camera_Y: ${CAMERA.y.toFixed(1)}`, 10, 120);
+  ctx.fillRect(10, 125, 150, 1);
+  ctx.fillText(
+    `Zoom: ${zoom.toFixed(1)} - IN-GAME CURSOR ONLY ON ZOOM 1.0`,
+    10,
+    140
+  );
+  ctx.fillRect(10, 145, 150, 1);
+  ctx.fillText(`Controls: A,S,D + W or Space, R = reset player`, 10, 160);
+  ctx.fillRect(10, 165, 150, 1);
+  ctx.fillText(`Block_X: ${Math.floor(player.pos.x / 50)}`, 10, 180);
+  ctx.fillText(
+    `Block_Y: ${-Math.floor((player.pos.y + playerHeight) / 50)}`,
+    10,
+    200
+  );
+  ctx.fillRect(10, 205, 150, 1);
+  ctx.fillText(`Cursor_Block_X: ${cursor_block_x}`, 10, 220);
+  ctx.fillText(`Cursor_Block_Y: ${-cursor_block_y}`, 10, 240);
+}
+
+function drawCursor() {
+  if (zoom !== 1) return;
+  ctx.strokeStyle = "red";
+  ctx.strokeRect(
+    cursor.x - velocity.x,
+    cursor.y - velocity.y,
+    50 * zoom,
+    50 * zoom
+  );
+}
+function calculateCursor() {
+  const m_x = mouse.x - origin.x - velocity.x;
+  const m_y = mouse.y - origin.y - velocity.y;
+  cursor.x = origin.x + Math.floor(m_x / 50) * 50;
+  cursor.y = origin.y + Math.floor(m_y / 50) * 50;
+}
+
+//ANIMATE (fps)
+function animate() {
+  ctx.fillStyle = "#82EEFD";
+  ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+  draw();
+  setTimeout(() => {
+    requestAnimationFrame(animate);
+  }, 1000 / fps);
+}
+animate();
+
+function calculateCollisions() {
+  const objects = objO.content;
   let tops = [];
   let bottoms = [];
   let lefts = [];
@@ -104,7 +245,9 @@ function calculate() {
     playerBottom + velocity.y + gravity <= closestTop ||
     closestTop === undefined
   ) {
-    velocity.y += gravity;
+    if (velocity.y < 30) {
+      velocity.y += gravity;
+    }
     player.pos.y += velocity.y;
   } else {
     velocity.y = 0;
@@ -126,16 +269,7 @@ function calculate() {
     velocity.x = 0;
     player.pos.x = closestRight;
   }
-
-  //REGISTERING MOVEMENT
   player.pos.x += velocity.x;
-  CAMERA.x = -(window.innerWidth / zoom / 2 - player.pos.x - player.width / 2);
-  CAMERA.y = -(
-    window.innerHeight / zoom / 2 -
-    player.pos.y -
-    player.height / 2
-  );
-
   //SLOWING DOWN X (NOT TO GO FOREVER)
   if (velocity.x < 0) {
     velocity.x += 1;
@@ -145,86 +279,14 @@ function calculate() {
   }
 }
 
-//KEY EVENTS ONLY FOR REGISTERING, NOT ACTIVATING ACTIONS!!!
-window.addEventListener("keydown", (e) => {
-  keyPressed[e.code] = true;
-});
-
-window.addEventListener("keyup", (e) => {
-  delete keyPressed[e.code];
-});
-
-//RESIZE EVENT
-window.addEventListener("resize", () => {
-  canvas.setAttribute("width", window.innerWidth);
-  canvas.setAttribute("height", window.innerHeight);
-
-  groundLevel = window.innerHeight - 50;
-});
-
-window.addEventListener("wheel", (e) => {
-  if (e.wheelDelta < 0) {
-    if (zoom > 0.2) {
-      zoom -= 0.1;
-    }
-  } else {
-    zoom += 0.1;
-  }
-});
-
-function gameTime() {
-  setInterval(calculate, 1000 / tickSpeed);
-}
-
-gameTime();
-
-//ONLY FOR DRAWING NOT CALCULING!!! CALCULATIONS ARE FOR THE TICKS TO DECIDE NOT THE FPS
-function draw() {
-  drawObject(
-    player.color,
-    player.pos.x,
-    player.pos.y,
-    player.width,
-    player.height
-  );
-  for (let object of objects) {
-    const { color, pos, width, height } = object;
-    drawObject(color, pos.x, pos.y, width, height);
-  }
-
-  //COORDS
-  ctx.fillStyle = "black";
-  ctx.fillText(`Player_X: ${player.pos.x}`, 10, 20);
-  ctx.fillText(
-    `Player_Y: ${-player.pos.y + groundLevel - playerHeight}`,
-    10,
-    40
-  );
-  ctx.fillText(`Velocity_X: ${velocity.x}`, 10, 60);
-  ctx.fillText(`Velocity_Y: ${velocity.y}`, 10, 80);
-  ctx.fillText(`Camera_X: ${CAMERA.x.toFixed(1)}`, 10, 100);
-  ctx.fillText(`Camera_Y: ${CAMERA.y.toFixed(1)}`, 10, 120);
-  ctx.fillText(`Zoom: ${zoom.toFixed(1)}`, 10, 140);
-  ctx.fillText(`Controls: A,S,D + W or Space`, 10, 160);
-}
-
-function drawObject(style, x, y, w, h) {
-  ctx.fillStyle = style;
-  ctx.fillRect(
-    x * zoom - CAMERA.x * zoom,
-    y * zoom - CAMERA.y * zoom,
-    w * zoom,
-    h * zoom
+function calculateCamera() {
+  //REGISTERING MOVEMENT
+  CAMERA.x = -(window.innerWidth / zoom / 2 - player.pos.x - player.width / 2);
+  CAMERA.y = -(
+    window.innerHeight / zoom / 2 -
+    player.pos.y -
+    player.height / 2
   );
 }
 
-//ANIMATE (fps)
-function animate() {
-  ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-  draw();
-  setTimeout(() => {
-    requestAnimationFrame(animate);
-  }, 1000 / fps);
-}
-
-animate();
+calculateCamera();
