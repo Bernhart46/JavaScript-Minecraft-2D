@@ -48,7 +48,6 @@ export function addObject() {
         y,
         w: 50,
         h: 50,
-        color: "aqua",
         image: grassImage,
       })
     );
