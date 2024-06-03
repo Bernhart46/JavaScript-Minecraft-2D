@@ -1,5 +1,12 @@
 import { Object, objects } from "../object.js";
-import { origin, cursor, zoom, keyPressed, velocity } from "../script.js";
+import {
+  origin,
+  cursor,
+  zoom,
+  keyPressed,
+  velocity,
+  canReach,
+} from "../script.js";
 
 //Block Images
 const grassImage = document.getElementById("grassImage");
@@ -16,6 +23,7 @@ export function getObject(x, y) {
 
 export function removeObject() {
   if (zoom !== 1) return;
+  if (!canReach) return;
   const x = Math.round(cursor.x - origin.x);
   const y = Math.round(cursor.y - origin.y);
 
@@ -27,6 +35,7 @@ export function removeObject() {
 
 export function addObject() {
   if (zoom !== 1) return;
+  if (!canReach) return;
 
   const x = Math.round(cursor.x - origin.x);
   const y = Math.round(cursor.y - origin.y);
@@ -46,9 +55,7 @@ export function addObject() {
   }
 }
 
-export function update() {
-  holdMouseAction();
-}
+export function update() {}
 
 export function leftClick() {
   removeObject();
@@ -58,7 +65,7 @@ export function rightClick() {
   addObject();
 }
 
-function holdMouseAction() {
+export function holdMouseAction() {
   const currentCursorX = Math.round(cursor.x - velocity.x);
   const currentCursorY = Math.round(cursor.y - velocity.y);
   if (currentCursorX === prevCursorPos.x && currentCursorY === prevCursorPos.y)
@@ -67,10 +74,10 @@ function holdMouseAction() {
   prevCursorPos.x = currentCursorX;
   prevCursorPos.y = currentCursorY;
 
-  if (keyPressed["mouseLeft"]) {
+  if (keyPressed["mouseLeft"] && canReach) {
     removeObject();
   }
-  if (keyPressed["mouseRight"]) {
+  if (keyPressed["mouseRight"] && canReach) {
     addObject();
   }
 }

@@ -1,7 +1,7 @@
 "use script";
 import { objects as objO, player } from "./object.js";
 import { Vector2D } from "./vector2d.js";
-import { leftClick, rightClick, update } from "./game/game.js";
+import { holdMouseAction, leftClick, rightClick, update } from "./game/game.js";
 import { formatTime } from "./utils/formatTime.js";
 import { getSkyColor } from "./game/getSkyColor.js";
 import { getAlpha } from "./game/getAlpha.js";
@@ -20,6 +20,8 @@ const gravity = 3; //Default: 3
 const moveSpeed = 8; //Default: 8
 const jumpHeight = 30; //Default: 30
 export const playerHeight = 100; //Default: 100
+const reach = 6; //Default: 6
+export let canReach = false;
 
 canvas.setAttribute("width", window.innerWidth);
 canvas.setAttribute("height", window.innerHeight);
@@ -29,6 +31,9 @@ export const velocity = new Vector2D(0, 0);
 export const origin = new Vector2D(0, 0);
 export const mouse = new Vector2D(0, 0);
 export const cursor = new Vector2D(0, 0);
+
+let cursor_block_x = 0;
+let cursor_block_y = 0;
 
 //Reason why it's separate from draw: Because in here, it calculates without being affected by the fps!
 function calculate() {
@@ -55,9 +60,6 @@ window.addEventListener("resize", () => {
   canvas.setAttribute("height", window.innerHeight);
 });
 
-window.addEventListener("click", (e) => {
-  leftClick();
-});
 window.addEventListener("contextmenu", (e) => {
   e.preventDefault();
   rightClick();
@@ -66,6 +68,9 @@ window.addEventListener("contextmenu", (e) => {
 window.addEventListener("mousedown", (e) => {
   if (e.button === 0) {
     keyPressed["mouseLeft"] = true;
+    //The reason why this is in here and not in onclick event, is because onclick event
+    //only works if I press down and up, in here it only needs to be down
+    leftClick();
   }
   if (e.button === 2) {
     keyPressed["mouseRight"] = true;
@@ -107,9 +112,7 @@ window.addEventListener("keypress", (e) => {
 function gameTime() {
   setInterval(() => {
     calculate();
-    update();
   }, 1000 / tickSpeed);
-
   setInterval(() => {
     if (time + 60 >= 86400) {
       time = 0;
@@ -168,8 +171,27 @@ function drawObject(obj) {
 }
 
 function drawInfo() {
-  const cursor_block_x = Math.floor((cursor.x - origin.x) / 50);
-  const cursor_block_y = Math.floor((cursor.y - origin.y) / 50);
+  cursor_block_x = Math.floor((cursor.x - origin.x) / 50);
+  cursor_block_y = Math.floor((cursor.y - origin.y) / 50);
+  //Check reach
+  const playerx = Math.floor(player.pos.x / 50);
+  const playery = Math.floor(player.pos.y / 50);
+
+  let canReachx = false;
+  let canReachy = false;
+  if (cursor_block_x <= playerx) {
+    canReachx = cursor_block_x - playerx >= -reach;
+  }
+  if (cursor_block_x >= playerx) {
+    canReachx = cursor_block_x - playerx <= reach;
+  }
+  if (cursor_block_y >= playery) {
+    canReachy = cursor_block_y - playery <= reach;
+  }
+  if (cursor_block_y <= playery) {
+    canReachy = cursor_block_y - playery >= -reach;
+  }
+  canReach = canReachx && canReachy;
 
   //COORDS
   if (time <= 75000 && time >= 12000) {
@@ -209,13 +231,9 @@ function drawInfo() {
 
 function drawCursor() {
   if (zoom !== 1) return;
+  if (!canReach) return;
   ctx.strokeStyle = "red";
-  ctx.strokeRect(
-    cursor.x - velocity.x,
-    cursor.y - velocity.y,
-    50 * zoom,
-    50 * zoom
-  );
+  ctx.strokeRect(cursor.x - velocity.x, cursor.y - velocity.y, 50, 50);
 }
 function calculateCursor() {
   const m_x = mouse.x - origin.x - velocity.x;
@@ -229,6 +247,10 @@ function animate() {
   ctx.fillStyle = getSkyColor(time);
   ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
   draw();
+
+  //Ez itt működik :S setInterval-nál nem
+
+  holdMouseAction();
   setTimeout(() => {
     requestAnimationFrame(animate);
   }, 1000 / fps);
