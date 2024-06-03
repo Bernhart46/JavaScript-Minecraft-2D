@@ -23,10 +23,13 @@ export const playerHeight = 100; //Default: 100
 const reach = 6; //Default: 6
 export let canReach = false;
 
+let objects = []; //ARRAY FOR OBJECTS
+
 canvas.setAttribute("width", window.innerWidth);
 canvas.setAttribute("height", window.innerHeight);
 
 export const CAMERA = new Vector2D(0, 0);
+export const CAMERA_ZOOMLESS = new Vector2D(0, 0);
 export const velocity = new Vector2D(0, 0);
 export const origin = new Vector2D(0, 0);
 export const mouse = new Vector2D(0, 0);
@@ -126,7 +129,7 @@ gameTime();
 
 //ONLY FOR DRAWING NOT CALCULING!!! CALCULATIONS ARE FOR THE TICKS TO DECIDE NOT THE FPS
 function draw() {
-  const objects = objO.content;
+  // const objects = objO.content;
   drawObject(player);
   for (let object of objects) {
     drawObject(object);
@@ -258,7 +261,18 @@ function animate() {
 animate();
 
 function calculateCollisions() {
-  const objects = objO.content;
+  // const objects = objO.content;
+
+  objects = objO.content.filter((obj) => {
+    if (
+      obj.pos.x >= CAMERA_ZOOMLESS.x - 100 &&
+      obj.pos.y >= CAMERA_ZOOMLESS.y - 100 &&
+      obj.pos.x + obj.width <= window.innerWidth + CAMERA_ZOOMLESS.x + 100 &&
+      obj.pos.y + obj.height <= window.innerHeight + CAMERA_ZOOMLESS.y + 100
+    ) {
+      return obj;
+    }
+  });
   let tops = [];
   let bottoms = [];
   let lefts = [];
@@ -377,6 +391,17 @@ function calculateCamera() {
   CAMERA.x = -(window.innerWidth / zoom / 2 - player.pos.x - player.width / 2);
   CAMERA.y = -(
     window.innerHeight / zoom / 2 -
+    player.pos.y -
+    player.height / 2
+  );
+
+  CAMERA_ZOOMLESS.x = -(
+    window.innerWidth / 2 -
+    player.pos.x -
+    player.width / 2
+  );
+  CAMERA_ZOOMLESS.y = -(
+    window.innerHeight / 2 -
     player.pos.y -
     player.height / 2
   );
