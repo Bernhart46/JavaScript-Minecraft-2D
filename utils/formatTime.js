@@ -1,11 +1,13 @@
 export function formatTime(totalSeconds) {
-  let hours = Math.floor(totalSeconds / 3600);
-  let minutes = Math.floor((totalSeconds % 3600) / 10);
-  let seconds = Math.floor(totalSeconds % 60);
+  var hours = Math.floor(totalSeconds / 3600);
+  var minutes = Math.floor((totalSeconds % 3600) / 60);
+  var seconds = totalSeconds % 60;
 
-  hours = hours < 10 ? "0" + hours : hours;
-  minutes = minutes < 10 ? "0" + minutes : minutes;
-  seconds = seconds < 10 ? "0" + seconds : seconds;
+  return (
+    padZero(hours) + ":" + padZero(minutes) + ":" + padZero(seconds.toFixed(0))
+  );
+}
 
-  return `${hours}:${minutes}:${seconds}`;
+function padZero(num) {
+  return (num < 10 ? "0" : "") + num;
 }
