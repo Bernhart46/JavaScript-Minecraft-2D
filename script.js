@@ -1,14 +1,59 @@
 "use script";
-import { objects as objO, player } from "./object.js";
 import { Vector2D } from "./vector2d.js";
 import { holdMouseAction, leftClick, rightClick, update } from "./game/game.js";
 import { formatTime } from "./utils/formatTime.js";
 import { getSkyColor } from "./game/getSkyColor.js";
 import { getAlpha } from "./game/getAlpha.js";
+import { io } from "./lib/socket-io.js";
+const grassImage = document.getElementById("grassImage");
+
+export const socket = io();
+export let objO;
+let players = [];
+let id, player;
+class Player {
+  constructor({ id }) {
+    this.id = id;
+    this.height = 90;
+    this.width = 50;
+    this.pos = {
+      x: 50,
+      y: 0 - this.height - 100,
+    };
+  }
+}
+
+socket.on("objects", (args) => {
+  objO = args.objects;
+  players = args.players;
+  id = args.id;
+  console.log(players);
+  player = players.find((p) => p.id === id);
+});
+
+socket.on("get_pos", (args) => {
+  const i = players.findIndex((p) => p.id === args.id);
+  if (i !== -1) {
+    players[i].pos = args.pos;
+  }
+});
+socket.on("user_joined", (newPlayer) => {
+  players.push(newPlayer);
+});
+socket.on("user_left", (id) => {
+  players = players.filter((p) => p.id !== id);
+});
+
+socket.on("place_block_to_client", (args) => {
+  objO.content.push(args);
+});
+socket.on("remove_block_to_client", (args) => {
+  objO.content = objO.content.filter((obj) => obj.id !== args);
+});
 
 const canvas = document.querySelector("#myCanvas");
 export const ctx = canvas.getContext("2d");
-const fps = 40; //Default: 30
+const fps = 30; //Default: 30
 //Custom time
 const tickSpeed = 40; //Default: 40
 export let time = 6 * 60 * 60;
@@ -136,8 +181,13 @@ gameTime();
 
 //ONLY FOR DRAWING NOT CALCULING!!! CALCULATIONS ARE FOR THE TICKS TO DECIDE NOT THE FPS
 function draw() {
+  if (!player) return;
   // const objects = objO.content;
-  drawObject(player);
+  for (let p of players) {
+    const { pos, width, height } = p;
+    const color = id === p.id ? "red" : "blue";
+    drawObject({ pos, width, height, color });
+  }
   for (let object of objects) {
     drawObject(object);
   }
@@ -149,8 +199,8 @@ function draw() {
 function drawObject(obj) {
   const { pos, width: w, height: h } = obj;
   const color = obj?.color;
-  const image = obj?.image;
-  if (!image) {
+  const type = obj?.type;
+  if (!type) {
     ctx.fillStyle = color || "black";
     ctx.fillRect(
       pos.x * zoom - CAMERA.x * zoom,
@@ -159,6 +209,8 @@ function drawObject(obj) {
       h * zoom
     );
   } else {
+    //temp image
+    let image = grassImage;
     ctx.drawImage(
       image,
       pos.x * zoom - CAMERA.x * zoom,
@@ -181,6 +233,7 @@ function drawObject(obj) {
 }
 
 function drawInfo() {
+  if (!player) return;
   cursor_block_x = Math.floor((cursor.x - origin.x) / 50);
   cursor_block_y = Math.floor((cursor.y - origin.y) / 50);
   //Check reach
@@ -240,6 +293,7 @@ function drawInfo() {
   ctx.fillText(`Time: ${formatTime(time)}`, 10, 260);
   ctx.fillRect(10, 265, 150, 1);
   ctx.fillText("You can turn this InfoBox off by pressing F3", 10, 280);
+  ctx.fillText(id, 10, 300);
 }
 
 function drawCursor() {
@@ -272,7 +326,8 @@ animate();
 
 function calculateCollisions() {
   // const objects = objO.content;
-
+  if (!objO) return;
+  if (!player) return;
   objects = objO.content.filter((obj) => {
     if (
       obj.pos.x >= CAMERA_ZOOMLESS.x - 100 &&
@@ -366,37 +421,49 @@ function calculateCollisions() {
       velocity.y += gravity;
     }
     player.pos.y += velocity.y;
+    socket.emit("set_pos", player.pos);
   } else {
     velocity.y = 0;
+
     player.pos.y = closestTop - player.height;
+    socket.emit("set_pos", player.pos);
   }
   //Roof hitting (player top hitting obj bottom)
   if (playerTop + velocity.y <= closestBottom) {
     velocity.y = 0;
     player.pos.y = closestBottom;
+    socket.emit("set_pos", player.pos);
   }
 
   //PlayerRight hitting ObjLeft
   if (playerRight + velocity.x >= closestLeft) {
     velocity.x = 0;
+
     player.pos.x = closestLeft - player.width;
+    socket.emit("set_pos", player.pos);
   }
   //PlayerLeft hitting ObjRight
   if (playerLeft + velocity.x <= closestRight) {
     velocity.x = 0;
+
     player.pos.x = closestRight;
+    socket.emit("set_pos", player.pos);
   }
   player.pos.x += velocity.x;
+  socket.emit("set_pos", player.pos);
   //SLOWING DOWN X (NOT TO GO FOREVER)
   if (velocity.x < 0) {
     velocity.x += 1;
+    socket.emit("set_pos", player.pos);
   }
   if (velocity.x > 0) {
     velocity.x -= 1;
+    socket.emit("set_pos", player.pos);
   }
 }
 
 function calculateCamera() {
+  if (!player) return;
   //REGISTERING MOVEMENT
   CAMERA.x = -(window.innerWidth / zoom / 2 - player.pos.x - player.width / 2);
   CAMERA.y = -(

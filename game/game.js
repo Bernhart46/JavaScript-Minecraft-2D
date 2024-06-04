@@ -1,5 +1,6 @@
-import { Object, objects } from "../object.js";
 import {
+  objO as objects,
+  socket,
   origin,
   cursor,
   zoom,
@@ -7,9 +8,6 @@ import {
   velocity,
   canReach,
 } from "../script.js";
-
-//Block Images
-const grassImage = document.getElementById("grassImage");
 
 //Variables
 const prevCursorPos = {
@@ -29,7 +27,7 @@ export function removeObject() {
 
   const id = getObject(x, y)?.id;
   if (id) {
-    objects.content = objects.content.filter((obj) => obj.id !== id);
+    socket.emit("remove_block_to_server", id);
   }
 }
 
@@ -42,15 +40,13 @@ export function addObject() {
   const tryId = getObject(x, y);
 
   if (!tryId) {
-    objects.content.push(
-      new Object({
-        x,
-        y,
-        w: 50,
-        h: 50,
-        image: grassImage,
-      })
-    );
+    socket.emit("place_block_to_server", {
+      x,
+      y,
+      w: 50,
+      h: 50,
+      type: "grass_block",
+    });
   }
 }
 
