@@ -5,37 +5,30 @@ import { formatTime } from "./utils/formatTime.js";
 import { getSkyColor } from "./game/getSkyColor.js";
 import { getAlpha } from "./game/getAlpha.js";
 import { io } from "./lib/socket-io.js";
+import { drawChat, changeTypingOn, isTypingOn } from "./game/chat.js";
 const grassImage = document.getElementById("grassImage");
 
 export const socket = io();
 export let objO;
 let players = [];
-let id, player;
-class Player {
-  constructor({ id }) {
-    this.id = id;
-    this.height = 90;
-    this.width = 50;
-    this.pos = {
-      x: 50,
-      y: 0 - this.height - 100,
-    };
-  }
-}
-
-socket.on("objects", (args) => {
+export let id;
+let player;
+export let time = 0;
+export let messages = [];
+export let message = "";
+//SOCKETS
+socket.on("init", (args) => {
   objO = args.objects;
   players = args.players;
   id = args.id;
-  console.log(players);
   player = players.find((p) => p.id === id);
+  time = args.time;
+  messages = args.messages;
 });
 
 socket.on("get_pos", (args) => {
   const i = players.findIndex((p) => p.id === args.id);
-  if (i !== -1) {
-    players[i].pos = args.pos;
-  }
+  players[i].pos = args.pos;
 });
 socket.on("user_joined", (newPlayer) => {
   players.push(newPlayer);
@@ -50,13 +43,16 @@ socket.on("place_block_to_client", (args) => {
 socket.on("remove_block_to_client", (args) => {
   objO.content = objO.content.filter((obj) => obj.id !== args);
 });
+socket.on("get_message", ({ id, message }) => {
+  messages.push({ id, message });
+});
 
+//VARIABLES
 const canvas = document.querySelector("#myCanvas");
 export const ctx = canvas.getContext("2d");
-const fps = 30; //Default: 30
+const fps = 60; //Default: 30
 //Custom time
 const tickSpeed = 40; //Default: 40
-export let time = 6 * 60 * 60;
 
 export const keyPressed = {};
 export let zoom = 1; //Default : 1
@@ -98,13 +94,41 @@ function calculate() {
 window.addEventListener("keydown", (e) => {
   e.preventDefault();
   keyPressed[e.code] = true;
+
+  if (isTypingOn && e.key === "Backspace") {
+    message = message.slice(0, -1);
+  }
 });
 
 window.addEventListener("keyup", (e) => {
-  if (e.code === "KeyR") {
+  if (e.code === "KeyR" && !isTypingOn) {
     velocity.y = 0;
     player.pos.x = 50;
     player.pos.y = -200;
+  }
+  if (e.key === "Enter" && isTypingOn) {
+    socket.emit("send_message", { id, message });
+    message = "";
+    changeTypingOn();
+  }
+  if (isTypingOn) {
+    if (
+      e.key === "Backspace" ||
+      e.key === "Shift" ||
+      e.key === "Control" ||
+      e.key === "Alt" ||
+      e.key === "Meta" ||
+      e.key === "AltGraph" ||
+      e.key === "Tab" ||
+      e.key === "CapsLock"
+    )
+      return;
+    const allowedKeys =
+      /[a-zA-Z0-9\s\b\t\`~!@#$%^&*()-_=+\[{\]}\|;:'",<.>/?áÁéÉíÍóÓúÚüÜűŰöÖőŐ]/;
+
+    if (allowedKeys.test(e.key) && message.length <= 40) {
+      message += e.key;
+    }
   }
 
   if (e.code === "F3") {
@@ -112,6 +136,9 @@ window.addEventListener("keyup", (e) => {
   }
   if (e.code === "F5") {
     location.reload();
+  }
+  if (e.code === "KeyT" && !isTypingOn) {
+    changeTypingOn();
   }
 
   delete keyPressed[e.code];
@@ -194,6 +221,7 @@ function draw() {
 
   drawInfo();
   drawCursor();
+  drawChat();
 }
 
 function drawObject(obj) {
@@ -324,6 +352,11 @@ function animate() {
 }
 animate();
 
+let hitBottom = false;
+let hitLeft = false;
+let hitRight = false;
+let previousPosX = 0;
+
 function calculateCollisions() {
   // const objects = objO.content;
   if (!objO) return;
@@ -393,7 +426,7 @@ function calculateCollisions() {
 
   ///KEY ACTIONS HERE!!!
   //Jump
-  if (keyPressed["Space"] || keyPressed["KeyW"]) {
+  if ((keyPressed["Space"] || keyPressed["KeyW"]) && !isTypingOn) {
     if (playerBottom === closestTop && playerTop !== closestBottom) {
       velocity.y -= jumpHeight;
       //this is for preventing the player to jump "twice". Latency issue
@@ -401,14 +434,16 @@ function calculateCollisions() {
     }
   }
   //Move Right
-  if (keyPressed["KeyD"]) {
+  if (keyPressed["KeyD"] && !isTypingOn) {
     if (playerRight !== closestLeft) {
+      hitRight = false;
       velocity.x = moveSpeed;
     }
   }
   //Move Left
-  if (keyPressed["KeyA"]) {
+  if (keyPressed["KeyA"] && !isTypingOn) {
     if (playerLeft !== closestRight) {
+      hitLeft = false;
       velocity.x = -moveSpeed;
     }
   }
@@ -422,11 +457,14 @@ function calculateCollisions() {
     }
     player.pos.y += velocity.y;
     socket.emit("set_pos", player.pos);
+    hitBottom = false;
   } else {
-    velocity.y = 0;
-
-    player.pos.y = closestTop - player.height;
-    socket.emit("set_pos", player.pos);
+    if (!hitBottom) {
+      velocity.y = 0;
+      player.pos.y = closestTop - player.height;
+      socket.emit("set_pos", player.pos);
+    }
+    hitBottom = true;
   }
   //Roof hitting (player top hitting obj bottom)
   if (playerTop + velocity.y <= closestBottom) {
@@ -437,20 +475,30 @@ function calculateCollisions() {
 
   //PlayerRight hitting ObjLeft
   if (playerRight + velocity.x >= closestLeft) {
-    velocity.x = 0;
-
-    player.pos.x = closestLeft - player.width;
-    socket.emit("set_pos", player.pos);
+    if (!hitRight) {
+      velocity.x = 0;
+      player.pos.x = closestLeft - player.width;
+      socket.emit("set_pos", player.pos);
+    }
+    hitRight = true;
   }
   //PlayerLeft hitting ObjRight
   if (playerLeft + velocity.x <= closestRight) {
-    velocity.x = 0;
+    if (!hitLeft) {
+      velocity.x = 0;
+      player.pos.x = closestRight;
+      socket.emit("set_pos", player.pos);
+    }
+    hitLeft = true;
+  }
 
-    player.pos.x = closestRight;
+  //Velocity to X (basic movement)
+  player.pos.x += velocity.x;
+  if (player.pos.x !== previousPosX) {
     socket.emit("set_pos", player.pos);
   }
-  player.pos.x += velocity.x;
-  socket.emit("set_pos", player.pos);
+  previousPosX = player.pos.x;
+
   //SLOWING DOWN X (NOT TO GO FOREVER)
   if (velocity.x < 0) {
     velocity.x += 1;
