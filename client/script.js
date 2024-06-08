@@ -6,7 +6,17 @@ import { getSkyColor } from "./game/getSkyColor.js";
 import { getAlpha } from "./game/getAlpha.js";
 import { io } from "./lib/socket-io.js";
 import { drawChat, changeTypingOn, isTypingOn } from "./game/chat.js";
-const grassImage = document.getElementById("grassImage");
+const grassBlock = document.getElementById("grass_block");
+const dirtBlock = document.getElementById("dirt_block");
+const stoneBlock = document.getElementById("stone_block");
+
+const blocks = {
+  grass_block: grassBlock,
+  dirt_block: dirtBlock,
+  stone_block: stoneBlock,
+};
+
+export let blockType = "grass_block";
 
 export const socket = io();
 export let objO;
@@ -50,7 +60,7 @@ socket.on("get_message", ({ id, message }) => {
 //VARIABLES
 const canvas = document.querySelector("#myCanvas");
 export const ctx = canvas.getContext("2d");
-const fps = 60; //Default: 30
+const fps = 30; //Default: 30
 //Custom time
 const tickSpeed = 40; //Default: 40
 
@@ -107,6 +117,11 @@ window.addEventListener("keyup", (e) => {
     player.pos.y = -200;
   }
   if (e.key === "Enter" && isTypingOn) {
+    if (message.trim().length === 0) {
+      message = "";
+      changeTypingOn();
+      return;
+    }
     socket.emit("send_message", { id, message });
     message = "";
     changeTypingOn();
@@ -139,6 +154,15 @@ window.addEventListener("keyup", (e) => {
   }
   if (e.code === "KeyT" && !isTypingOn) {
     changeTypingOn();
+  }
+  if (e.code === "Digit1" && !isTypingOn) {
+    blockType = "grass_block";
+  }
+  if (e.code === "Digit2" && !isTypingOn) {
+    blockType = "dirt_block";
+  }
+  if (e.code === "Digit3" && !isTypingOn) {
+    blockType = "stone_block";
   }
 
   delete keyPressed[e.code];
@@ -221,7 +245,6 @@ function draw() {
 
   drawInfo();
   drawCursor();
-  drawChat();
 }
 
 function drawObject(obj) {
@@ -237,8 +260,7 @@ function drawObject(obj) {
       h * zoom
     );
   } else {
-    //temp image
-    let image = grassImage;
+    let image = blocks[type];
     ctx.drawImage(
       image,
       pos.x * zoom - CAMERA.x * zoom,
@@ -321,7 +343,8 @@ function drawInfo() {
   ctx.fillText(`Time: ${formatTime(time)}`, 10, 260);
   ctx.fillRect(10, 265, 150, 1);
   ctx.fillText("You can turn this InfoBox off by pressing F3", 10, 280);
-  ctx.fillText(id, 10, 300);
+  ctx.fillText(`id: ${id}`, 10, 300);
+  ctx.fillText(`Block: ${blockType} (change with numbers 1..3)`, 10, 320);
 }
 
 function drawCursor() {
@@ -342,6 +365,7 @@ function animate() {
   ctx.fillStyle = getSkyColor(time);
   ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
   draw();
+  drawChat();
 
   //Ez itt működik :S setInterval-nál nem
 

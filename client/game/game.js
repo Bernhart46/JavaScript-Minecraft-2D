@@ -7,6 +7,7 @@ import {
   keyPressed,
   velocity,
   canReach,
+  blockType,
 } from "../script.js";
 
 //Variables
@@ -45,7 +46,7 @@ export function addObject() {
       y,
       w: 50,
       h: 50,
-      type: "grass_block",
+      type: blockType,
     });
   }
 }

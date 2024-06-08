@@ -10,11 +10,16 @@
         margin: 0;
         overflow: hidden;
       }
+      img {
+        display: none;
+      }
     </style>
   </head>
   <body>
     <!-- ASSETS -->
-    <img src="./game/blocks/grass.webp" style="display: none" id="grassImage" />
+    <img src="./game/blocks/grass_block.png" id="grass_block" />
+    <img src="./game/blocks/dirt_block.png" id="dirt_block" />
+    <img src="./game/blocks/stone_block.png" id="stone_block" />
     <!--GAME-->
     <canvas id="myCanvas"></canvas>
     <script src="script.js" type="module"></script>
