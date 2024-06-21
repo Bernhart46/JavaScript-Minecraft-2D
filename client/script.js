@@ -108,6 +108,11 @@ window.addEventListener("keydown", (e) => {
   if (isTypingOn && e.key === "Backspace") {
     message = message.slice(0, -1);
   }
+  if (isTypingOn) {
+    if (e.key.length === 1 && message.length <= 40) {
+      message += e.key;
+    }
+  }
 });
 
 window.addEventListener("keyup", (e) => {
@@ -125,25 +130,6 @@ window.addEventListener("keyup", (e) => {
     socket.emit("send_message", { id, message });
     message = "";
     changeTypingOn();
-  }
-  if (isTypingOn) {
-    if (
-      e.key === "Backspace" ||
-      e.key === "Shift" ||
-      e.key === "Control" ||
-      e.key === "Alt" ||
-      e.key === "Meta" ||
-      e.key === "AltGraph" ||
-      e.key === "Tab" ||
-      e.key === "CapsLock"
-    )
-      return;
-    const allowedKeys =
-      /[a-zA-Z0-9\s\b\t\`~!@#$%^&*()-_=+\[{\]}\|;:'",<.>/?áÁéÉíÍóÓúÚüÜűŰöÖőŐ]/;
-
-    if (allowedKeys.test(e.key) && message.length <= 40) {
-      message += e.key;
-    }
   }
 
   if (e.code === "F3") {

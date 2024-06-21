@@ -1,0 +1,6 @@
+0 - grass block
+1 - dirt block
+2 - stone block
+
+Min world height: 0
+Max world height: 256
