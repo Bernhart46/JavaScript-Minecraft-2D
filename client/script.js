@@ -26,14 +26,26 @@ let player;
 export let time = 0;
 export let messages = [];
 export let message = "";
+
+let savedID = localStorage.getItem("player_id");
 //SOCKETS
-socket.on("init", (args) => {
+socket.on("connect", () => {
+  socket.emit("init", savedID);
+});
+socket.on("already_connected", () => {
+  document.body.innerHTML = "ERROR: Already connected!";
+});
+socket.on("init_response", (args) => {
   objO = args.objects;
   players = args.players;
   id = args.id;
   player = players.find((p) => p.id === id);
   time = args.time;
   messages = args.messages;
+
+  if (savedID !== id) {
+    localStorage.setItem("player_id", id);
+  }
 });
 
 socket.on("get_pos", (args) => {
@@ -56,6 +68,10 @@ socket.on("remove_block_to_client", (args) => {
 socket.on("get_message", ({ id, message }) => {
   messages.push({ id, message });
 });
+socket.on("new_name_setted", ({ id, newName }) => {
+  const p = players.find((x) => x.id === id);
+  p.name = newName;
+});
 
 //VARIABLES
 const canvas = document.querySelector("#myCanvas");
@@ -63,10 +79,8 @@ export const ctx = canvas.getContext("2d");
 const fps = 30; //Default: 30
 //Custom time
 const tickSpeed = 40; //Default: 40
-
 export const keyPressed = {};
 export let zoom = 1; //Default : 1
-
 const gravity = 3; //Default: 3
 const moveSpeed = 8; //Default: 8
 const jumpHeight = 30; //Default: 30
@@ -74,7 +88,6 @@ export const playerHeight = 90; //Default: 100
 const reach = 6; //Default: 6
 export let canReach = false;
 let isInfo = true;
-
 let objects = []; //ARRAY FOR OBJECTS
 
 canvas.setAttribute("width", window.innerWidth);
@@ -123,6 +136,12 @@ window.addEventListener("keyup", (e) => {
   }
   if (e.key === "Enter" && isTypingOn) {
     if (message.trim().length === 0) {
+      message = "";
+      changeTypingOn();
+      return;
+    }
+    if (message.split(" ").length === 2 && message.startsWith("/setname")) {
+      socket.emit("set_name", message.split(" ")[1]);
       message = "";
       changeTypingOn();
       return;
@@ -224,6 +243,17 @@ function draw() {
     const { pos, width, height } = p;
     const color = id === p.id ? "red" : "blue";
     drawObject({ pos, width, height, color });
+    //player name
+    if (time <= 75000 && time >= 12000) {
+      ctx.fillStyle = "black";
+    } else {
+      ctx.fillStyle = "white";
+    }
+    ctx.fillText(
+      `${p.name}`,
+      p.pos.x * zoom - CAMERA.x * zoom,
+      p.pos.y * zoom - CAMERA.y * zoom - 20
+    );
   }
   for (let object of objects) {
     drawObject(object);
@@ -328,9 +358,9 @@ function drawInfo() {
   ctx.fillRect(10, 245, 150, 1);
   ctx.fillText(`Time: ${formatTime(time)}`, 10, 260);
   ctx.fillRect(10, 265, 150, 1);
-  ctx.fillText("You can turn this InfoBox off by pressing F3", 10, 280);
-  ctx.fillText(`id: ${id}`, 10, 300);
-  ctx.fillText(`Block: ${blockType} (change with numbers 1..3)`, 10, 320);
+  ctx.fillText(`name: ${player.name}`, 10, 280);
+  ctx.fillText(`Block: ${blockType} (change with numbers 1..3)`, 10, 300);
+  ctx.fillText("You can turn this InfoBox off by pressing F3", 10, 320);
 }
 
 function drawCursor() {

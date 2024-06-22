@@ -45,15 +45,23 @@ class Player {
       y: 0 - this.height - 100,
     };
   }
+  setId(newId) {
+    this.id = newId;
+  }
+  setName(newName = "Guest") {
+    this.name = newName;
+  }
 }
 
 let players = [];
 let messages = [];
+const playerNames = {};
+const playerIDs = {};
 
 let objects = {
   content: [
     new Object({
-      id: 0,
+      id: 1,
       x: 0,
       y: 0,
       w: 50,
@@ -61,7 +69,7 @@ let objects = {
       type: "grass_block",
     }),
     new Object({
-      id: 1,
+      id: 2,
       x: 50,
       y: 0,
       w: 50,
@@ -69,7 +77,7 @@ let objects = {
       type: "grass_block",
     }),
     new Object({
-      id: 2,
+      id: 3,
       x: 100,
       y: 0,
       w: 50,
@@ -77,7 +85,7 @@ let objects = {
       type: "grass_block",
     }),
     new Object({
-      id: 3,
+      id: 4,
       x: 150,
       y: 0,
       w: 50,
@@ -103,49 +111,71 @@ gameTime();
 
 //IO
 io.on("connection", (socket) => {
-  console.log("user connected");
-  const newPlayer = new Player();
-  players.push(newPlayer);
+  socket.on("init", (id) => {
+    const newPlayer = new Player();
+    const playerId = id === null ? v4() : id;
+    newPlayer.setId(playerId);
 
-  socket.emit("init", {
-    objects,
-    players,
-    id: newPlayer.id,
-    time,
-    messages: messages.slice(-12),
-  });
-  socket.broadcast.emit("user_joined", newPlayer);
+    const isConnected = players.find((x) => x.id === playerId);
 
-  //BLOCKS
-  socket.on("place_block_to_server", (args) => {
-    const obj = new Object(args);
-    objects.content.push(obj);
-    io.emit("place_block_to_client", obj);
-  });
+    if (isConnected) {
+      socket.emit("already_connected");
+      return;
+    }
+    newPlayer.setName(playerNames[playerId]);
+    players.push(newPlayer);
+    console.log(newPlayer.name + " connected");
 
-  socket.on("remove_block_to_server", (args) => {
-    objects.content = objects.content.filter((x) => x.id !== args);
-    io.emit("remove_block_to_client", args);
-  });
+    socket.emit("init_response", {
+      objects,
+      players,
+      id: newPlayer.id,
+      time,
+      messages: messages.slice(-12),
+    });
+    socket.broadcast.emit("user_joined", newPlayer);
 
-  //MOVEMENT
-  socket.on("set_pos", (pos) => {
-    newPlayer.pos = pos;
+    //BLOCKS
+    socket.on("place_block_to_server", (args) => {
+      const obj = new Object(args);
+      objects.content.push(obj);
+      io.emit("place_block_to_client", obj);
+    });
 
-    socket.broadcast.emit("get_pos", { id: newPlayer.id, pos });
-  });
+    socket.on("remove_block_to_server", (args) => {
+      objects.content = objects.content.filter((x) => x.id !== args);
+      io.emit("remove_block_to_client", args);
+    });
 
-  //MESSAGES
-  socket.on("send_message", ({ id, message }) => {
-    messages.push({ id, message });
-    io.emit("get_message", { id, message });
-  });
+    //MOVEMENT
+    socket.on("set_pos", (pos) => {
+      newPlayer.pos = pos;
 
-  socket.on("disconnect", () => {
-    players = players.filter((p) => p.id !== newPlayer.id);
+      socket.broadcast.emit("get_pos", { id: newPlayer.id, pos });
+    });
 
-    io.emit("user_left", newPlayer.id);
-    console.log("user disconnected");
+    //MESSAGES
+    socket.on("send_message", ({ id, message }) => {
+      messages.push({ id, message });
+      io.emit("get_message", { id, message });
+    });
+
+    socket.on("disconnect", () => {
+      players = players.filter((p) => p.id !== newPlayer.id);
+
+      io.emit("user_left", newPlayer.id);
+      console.log(newPlayer.name + " disconnected");
+    });
+    //CHAT COMMANDS
+    socket.on("set_name", (newName) => {
+      const usedName = playerIDs[newName];
+      if (usedName) return;
+      playerIDs[newName] = newPlayer.id;
+      delete playerIDs[newPlayer.name];
+      playerNames[newPlayer.id] = newName;
+      newPlayer.setName(newName);
+      io.emit("new_name_setted", { id, newName });
+    });
   });
 });
 
