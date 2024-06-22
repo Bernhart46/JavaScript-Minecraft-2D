@@ -9,11 +9,15 @@ import { drawChat, changeTypingOn, isTypingOn } from "./game/chat.js";
 const grassBlock = document.getElementById("grass_block");
 const dirtBlock = document.getElementById("dirt_block");
 const stoneBlock = document.getElementById("stone_block");
+const oakLog = document.getElementById("oak_log");
+const oakLeaves = document.getElementById("oak_leaves");
 
 const blocks = {
   grass_block: grassBlock,
   dirt_block: dirtBlock,
   stone_block: stoneBlock,
+  oak_log: oakLog,
+  oak_leaves: oakLeaves,
 };
 
 export let blockType = "grass_block";
@@ -180,6 +184,12 @@ window.addEventListener("keyup", (e) => {
   if (e.code === "Digit3" && !isTypingOn) {
     blockType = "stone_block";
   }
+  if (e.code === "Digit4" && !isTypingOn) {
+    blockType = "oak_log";
+  }
+  if (e.code === "Digit5" && !isTypingOn) {
+    blockType = "oak_leaves";
+  }
 
   delete keyPressed[e.code];
 });
@@ -290,8 +300,8 @@ function drawObject(obj) {
     let image = blocks[type];
     ctx.drawImage(
       image,
-      pos.x * zoom - CAMERA.x * zoom,
-      pos.y * zoom - CAMERA.y * zoom,
+      pos.x * zoom - CAMERA.x * zoom + 0.5,
+      pos.y * zoom - CAMERA.y * zoom + 0.5,
       w * zoom,
       h * zoom
     );
@@ -301,8 +311,8 @@ function drawObject(obj) {
 
     ctx.fillStyle = `rgba(0,0,0,${a})`;
     ctx.fillRect(
-      pos.x * zoom - CAMERA.x * zoom,
-      pos.y * zoom - CAMERA.y * zoom,
+      pos.x * zoom - CAMERA.x * zoom + 0.5,
+      pos.y * zoom - CAMERA.y * zoom + 0.5,
       w * zoom,
       h * zoom
     );
