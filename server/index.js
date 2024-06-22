@@ -4,6 +4,8 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { Server } from "socket.io";
 import { v4 } from "uuid";
+import fs from "fs";
+import path from "path";
 
 const app = express();
 const server = createServer(app);
@@ -55,8 +57,8 @@ class Player {
 
 let players = [];
 let messages = [];
-const playerNames = {};
-const playerIDs = {};
+let playerNames = {};
+let playerIDs = {};
 
 let objects = {
   content: [
@@ -96,6 +98,16 @@ let objects = {
 };
 
 let time = 7 * 60 * 60;
+
+fs.readFile(path.join(__dirname, "saves", "save.json"), "utf8", (err, d) => {
+  if (err) throw err;
+
+  const data = JSON.parse(d);
+  playerNames = data.playerNames;
+  playerIDs = data.playerIDs;
+  objects = data.objects;
+  time = data.time;
+});
 
 function gameTime() {
   setInterval(() => {
@@ -182,3 +194,24 @@ io.on("connection", (socket) => {
 server.listen(3000, () => {
   console.log("server running at http://localhost:3000");
 });
+
+//SAVE
+process.on("SIGINT", () => {
+  console.log("SAVING...");
+  saveDataBeforeExit().then(() => {
+    console.log("SAVED...");
+    process.exit(0);
+  });
+});
+
+async function saveDataBeforeExit() {
+  await fs.promises.writeFile(
+    path.join(__dirname, "saves", "save.json"),
+    JSON.stringify({
+      objects: objects,
+      playerNames: playerNames,
+      playerIDs: playerIDs,
+      time: time,
+    })
+  );
+}
