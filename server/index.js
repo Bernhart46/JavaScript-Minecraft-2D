@@ -188,6 +188,38 @@ io.on("connection", (socket) => {
       newPlayer.setName(newName);
       io.emit("new_name_setted", { id, newName });
     });
+    socket.on("set_time", (arg) => {
+      let newTime;
+      if (!isNaN(arg)) {
+        newTime = parseInt(arg) * 60;
+      } else {
+        switch (arg) {
+          case "morning":
+            newTime = 7 * 60 * 60;
+            break;
+          case "noon":
+            newTime = 12 * 60 * 60;
+            break;
+          case "afternoon":
+            newTime = 15 * 60 * 60;
+            break;
+          case "evening":
+            newTime = 18 * 60 * 60;
+            break;
+          case "night":
+            newTime = 21 * 60 * 60;
+            break;
+          case "midnight":
+            newTime = 0;
+            break;
+          default:
+            newTime = 7 * 60 * 60;
+            break;
+        }
+      }
+      time = newTime;
+      io.emit("new_time_setted", { newTime });
+    });
   });
 });
 

@@ -72,6 +72,10 @@ socket.on("new_name_setted", ({ id, newName }) => {
   const p = players.find((x) => x.id === id);
   p.name = newName;
 });
+socket.on("new_time_setted", ({ newTime }) => {
+  console.log(newTime);
+  time = newTime;
+});
 
 //VARIABLES
 const canvas = document.querySelector("#myCanvas");
@@ -140,11 +144,19 @@ window.addEventListener("keyup", (e) => {
       changeTypingOn();
       return;
     }
-    if (message.split(" ").length === 2 && message.startsWith("/setname")) {
-      socket.emit("set_name", message.split(" ")[1]);
-      message = "";
-      changeTypingOn();
-      return;
+    if (message.split(" ").length === 2) {
+      if (message.startsWith("/setname")) {
+        socket.emit("set_name", message.split(" ")[1]);
+        message = "";
+        changeTypingOn();
+        return;
+      }
+      if (message.startsWith("/settime")) {
+        socket.emit("set_time", message.split(" ")[1]);
+        message = "";
+        changeTypingOn();
+        return;
+      }
     }
     socket.emit("send_message", { id, message });
     message = "";
