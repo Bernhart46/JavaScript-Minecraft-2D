@@ -73,7 +73,6 @@ socket.on("new_name_setted", ({ id, newName }) => {
   p.name = newName;
 });
 socket.on("new_time_setted", ({ newTime }) => {
-  console.log(newTime);
   time = newTime;
 });
 
