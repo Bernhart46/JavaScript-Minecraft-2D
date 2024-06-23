@@ -121,6 +121,11 @@ function gameTime() {
 
 gameTime();
 
+function getDate() {
+  const date = new Date();
+  return `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
+}
+
 //IO
 io.on("connection", (socket) => {
   socket.on("init", (id) => {
@@ -136,7 +141,7 @@ io.on("connection", (socket) => {
     }
     newPlayer.setName(playerNames[playerId]);
     players.push(newPlayer);
-    console.log(newPlayer.name + " connected");
+    console.log(`${getDate()}: ${newPlayer.name} connected`);
 
     socket.emit("init_response", {
       objects,
@@ -176,7 +181,7 @@ io.on("connection", (socket) => {
       players = players.filter((p) => p.id !== newPlayer.id);
 
       io.emit("user_left", newPlayer.id);
-      console.log(newPlayer.name + " disconnected");
+      console.log(`${getDate()}: ${newPlayer.name}  disconnected`);
     });
     //CHAT COMMANDS
     socket.on("set_name", (newName) => {
@@ -224,7 +229,7 @@ io.on("connection", (socket) => {
 });
 
 server.listen(3000, () => {
-  console.log("server running at http://localhost:3000");
+  console.log(getDate() + ": Server running at http://localhost:3000");
 });
 
 //SAVE
