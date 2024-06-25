@@ -1,6 +1,39 @@
-0 - grass block
-1 - dirt block
-2 - stone block
+0 - nothing
+1 - grass block
+2 - dirt block
+3 - stone block
+4 - oak log
+5 - oak leaves
 
-Min world height: 0
-Max world height: 256
+Min world height: 0 -> bedrock level
+Max world height: 255 -> max block height (you can't place on 256)
+Chunk Number: (default: 4, maximize to 8)
+
+Here is where I left:
+ - created pos and neg chunks with a gen chunk function
+ - remade the data structure for storing chunks (obj[])
+ - send chunkNumber from client to server through "init"
+ - render chunks, add block, remove block
+
+What I need to do:
+ - ADD 0 ON SINGLE DIGITS ON TIMER ON SERVER CONSOLE ex: 02
+ - rework physics: now: object ARRAY -> after: surrounding ARRAY
+   -> put the surrounding blocks into an array and go through them
+
+ - Send new chunks based on player X movements (fileread sync!!! not to block
+  the main thread) (first do it without files and fileread, just get the new
+  chunks from the pos&neg objects)
+ )
+ - cleanup chunks (if a chunk does not have blocks ,remove the chunk, same with
+ columns)
+ -> region files: 1 file -> 32 chunks
+ -> player data into different file
+
+ -> World gen:
+    -> base biome (biome of the spawn area) should be random
+    -> biome size should be random in a range (idk maybe from 8-16 chunks)
+    -> on biome end there should be a chunk for smooth change to the next biome
+    -> generate next biome type before the biome_end chunk! (so in the
+    spawn chunk, generator already knows the left and right side biomes)
+
+    -> surface... (need to plan this out)

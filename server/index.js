@@ -27,16 +27,6 @@ class Vector2D {
   }
 }
 
-class Object {
-  constructor({ id, x = 0, y = 0, w = 50, h = 50, type }) {
-    this.id = v4();
-    this.width = w;
-    this.height = h;
-    this.pos = new Vector2D(x, y);
-    this.type = type;
-  }
-}
-
 class Player {
   constructor() {
     this.id = v4();
@@ -55,14 +45,19 @@ class Player {
   }
 }
 
-let players = [];
-let messages = [];
-let playerNames = {};
-let playerIDs = {};
-
+//temp objects instead of chunks (deprecated)
+class Block {
+  constructor({ id, x = 0, y = 0, w = 50, h = 50, type }) {
+    this.id = v4();
+    this.width = w;
+    this.height = h;
+    this.pos = new Vector2D(x, y);
+    this.type = type;
+  }
+}
 let objects = {
   content: [
-    new Object({
+    new Block({
       id: 1,
       x: 0,
       y: 0,
@@ -70,7 +65,7 @@ let objects = {
       h: 50,
       type: "grass_block",
     }),
-    new Object({
+    new Block({
       id: 2,
       x: 50,
       y: 0,
@@ -78,7 +73,7 @@ let objects = {
       h: 50,
       type: "grass_block",
     }),
-    new Object({
+    new Block({
       id: 3,
       x: 100,
       y: 0,
@@ -86,7 +81,7 @@ let objects = {
       h: 50,
       type: "grass_block",
     }),
-    new Object({
+    new Block({
       id: 4,
       x: 150,
       y: 0,
@@ -96,18 +91,66 @@ let objects = {
     }),
   ],
 };
+let players = [];
+let messages = [];
+let playerNames = {};
+let playerIDs = {};
+
+let positive_chunks = {
+  //0th chunk -> chunk is from y 0 to y 255
+  0: generateChunk(),
+  1: generateChunk(),
+};
+let negative_chunks = {
+  1: generateChunk(),
+  2: generateChunk(),
+};
+
+// for testing
+// for (const [key, value] of Object.entries({ 0: 1, 55: 3, 3: 2, 1: 2 })) {
+//   console.log(`Key: ${key}, Value: ${value}`);
+// }
+
+// console.log(positive_chunks);
+//TEMPORARY GENERATOR
+function generateChunk() {
+  const chunk = {
+    0: { 0: 3, 1: 2, 2: 5 },
+    1: { 0: 3, 1: 2, 2: 1 },
+    2: { 0: 3, 1: 2, 2: 1 },
+    3: { 0: 3, 1: 2, 2: 1, 6: 5, 7: 5 },
+    4: { 0: 3, 1: 2, 2: 1, 6: 5, 7: 5, 8: 5, 9: 5 },
+    5: { 0: 3, 1: 2, 2: 1, 3: 4, 4: 4, 5: 4, 6: 5, 7: 5, 8: 5, 9: 5 },
+    6: { 0: 3, 1: 2, 2: 1, 6: 5, 7: 5, 8: 5, 9: 5 },
+    7: { 0: 3, 1: 2, 2: 1, 6: 5, 7: 5 },
+    8: { 0: 3, 1: 2, 2: 1 },
+    9: { 0: 3, 1: 2, 2: 1 },
+    10: { 0: 3, 1: 2, 2: 1 },
+    11: { 0: 3, 1: 2, 2: 1 },
+    12: { 0: 3, 1: 2, 2: 1 },
+    13: { 0: 3, 1: 2, 2: 1 },
+    14: { 0: 3, 1: 2, 2: 1 },
+    15: { 0: 3, 1: 2, 2: 3 },
+  };
+  // for (let i = 0; i < 16; i++) {
+  //   const column = { 0: 1, 6: 1, 7: 2 };
+  //   chunk.push(column);
+  // }
+
+  return chunk;
+}
 
 let time = 7 * 60 * 60;
 
-fs.readFile(path.join(__dirname, "saves", "save.json"), "utf8", (err, d) => {
-  if (err) throw err;
-
-  const data = JSON.parse(d);
-  playerNames = data.playerNames;
-  playerIDs = data.playerIDs;
-  objects = data.objects;
-  time = data.time;
-});
+// fs.readFile(path.join(__dirname, "saves", "save.json"), "utf8", (err, d) => {
+//   if (err) throw err;
+//
+//   const data = JSON.parse(d);
+//   playerNames = data.playerNames;
+//   playerIDs = data.playerIDs;
+//   objects = data.objects;
+//   time = data.time;
+// });
 
 function gameTime() {
   setInterval(() => {
@@ -128,7 +171,7 @@ function getDate() {
 
 //IO
 io.on("connection", (socket) => {
-  socket.on("init", (id) => {
+  socket.on("init", ({ id, chunks }) => {
     const newPlayer = new Player();
     const playerId = id === null ? v4() : id;
     newPlayer.setId(playerId);
@@ -141,10 +184,37 @@ io.on("connection", (socket) => {
     }
     newPlayer.setName(playerNames[playerId]);
     players.push(newPlayer);
+
+    const chunksToSend = {
+      positives: {},
+      negatives: {}, //1 is the minimum
+    };
+
+    //CALCULATE CHUNKS
+    const isPositive = newPlayer.pos.x > 0;
+    const playerChunk = Math.floor(newPlayer.pos.x / 50 / 16);
+    //-1 because of the arrays start with 0
+    const minChunk = playerChunk - chunks;
+    const maxChunk = playerChunk + chunks;
+
+    //Positive chunks
+    for (let i = 0; i <= chunks; i++) {
+      if (positive_chunks[i]) {
+        chunksToSend.positives[i] = positive_chunks[i];
+      }
+    }
+    //Negative chunks
+    for (let i = 1; i <= chunks; i++) {
+      if (negative_chunks[i]) {
+        chunksToSend.negatives[i] = negative_chunks[i];
+      }
+    }
+
     console.log(`${getDate()}: ${newPlayer.name} connected`);
 
     socket.emit("init_response", {
       objects,
+      chunksToSend,
       players,
       id: newPlayer.id,
       time,
@@ -154,13 +224,31 @@ io.on("connection", (socket) => {
 
     //BLOCKS
     socket.on("place_block_to_server", (args) => {
-      const obj = new Object(args);
-      objects.content.push(obj);
-      io.emit("place_block_to_client", obj);
+      const { isNegative, chunk, x, y, type } = args;
+
+      if (isNegative) {
+        if (!negative_chunks[chunk][x][y]) {
+          negative_chunks[chunk][x][y] = type;
+          io.emit("place_block_to_client", args);
+        }
+      } else {
+        if (!positive_chunks[chunk][x][y]) {
+          positive_chunks[chunk][x][y] = type;
+          io.emit("place_block_to_client", args);
+        }
+      }
+
+      // objects.content.push(obj);
     });
 
     socket.on("remove_block_to_server", (args) => {
-      objects.content = objects.content.filter((x) => x.id !== args);
+      const { isNegative, chunk, x, y } = args;
+      // objects.content = objects.content.filter((x) => x.id !== args);
+      if (isNegative) {
+        delete negative_chunks[chunk][x][y];
+      } else {
+        delete positive_chunks[chunk][x][y];
+      }
       io.emit("remove_block_to_client", args);
     });
 
@@ -181,7 +269,7 @@ io.on("connection", (socket) => {
       players = players.filter((p) => p.id !== newPlayer.id);
 
       io.emit("user_left", newPlayer.id);
-      console.log(`${getDate()}: ${newPlayer.name}  disconnected`);
+      console.log(`${getDate()}: ${newPlayer.name} disconnected`);
     });
     //CHAT COMMANDS
     socket.on("set_name", (newName) => {
@@ -233,22 +321,22 @@ server.listen(3000, () => {
 });
 
 //SAVE
-process.on("SIGINT", () => {
-  console.log("SAVING...");
-  saveDataBeforeExit().then(() => {
-    console.log("SAVED...");
-    process.exit(0);
-  });
-});
-
-async function saveDataBeforeExit() {
-  await fs.promises.writeFile(
-    path.join(__dirname, "saves", "save.json"),
-    JSON.stringify({
-      objects: objects,
-      playerNames: playerNames,
-      playerIDs: playerIDs,
-      time: time,
-    })
-  );
-}
+// process.on("SIGINT", () => {
+//   console.log("SAVING...");
+//   saveDataBeforeExit().then(() => {
+//     console.log("SAVED...");
+//     process.exit(0);
+//   });
+// });
+//
+// async function saveDataBeforeExit() {
+//   await fs.promises.writeFile(
+//     path.join(__dirname, "saves", "save.json"),
+//     JSON.stringify({
+//       objects: objects,
+//       playerNames: playerNames,
+//       playerIDs: playerIDs,
+//       time: time,
+//     })
+//   );
+// }

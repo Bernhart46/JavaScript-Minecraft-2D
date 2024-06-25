@@ -13,14 +13,14 @@ const oakLog = document.getElementById("oak_log");
 const oakLeaves = document.getElementById("oak_leaves");
 
 const blocks = {
-  grass_block: grassBlock,
-  dirt_block: dirtBlock,
-  stone_block: stoneBlock,
-  oak_log: oakLog,
-  oak_leaves: oakLeaves,
+  1: grassBlock,
+  2: dirtBlock,
+  3: stoneBlock,
+  4: oakLog,
+  5: oakLeaves,
 };
 
-export let blockType = "grass_block";
+export let blockType = 1;
 
 export const socket = io();
 export let objO;
@@ -30,17 +30,22 @@ let player;
 export let time = 0;
 export let messages = [];
 export let message = "";
+const chunkNumber = 4;
+let chunks = {};
+let n_chunk_length = 0;
+let p_chunk_length = 0;
 
 let savedID = localStorage.getItem("player_id");
 //SOCKETS
 socket.on("connect", () => {
-  socket.emit("init", savedID);
+  socket.emit("init", { id: savedID, chunks: chunkNumber });
 });
 socket.on("already_connected", () => {
   document.body.innerHTML = "ERROR: Already connected!";
 });
 socket.on("init_response", (args) => {
   objO = args.objects;
+  chunks = args.chunksToSend;
   players = args.players;
   id = args.id;
   player = players.find((p) => p.id === id);
@@ -50,6 +55,12 @@ socket.on("init_response", (args) => {
   if (savedID !== id) {
     localStorage.setItem("player_id", id);
   }
+
+  //calculate chunk length (here because it's only once when update)
+  n_chunk_length = Object.keys(chunks.negatives).length;
+  p_chunk_length = Object.keys(chunks.positives).length;
+
+  console.log(chunks);
 });
 
 socket.on("get_pos", (args) => {
@@ -64,10 +75,23 @@ socket.on("user_left", (id) => {
 });
 
 socket.on("place_block_to_client", (args) => {
-  objO.content.push(args);
+  const { isNegative, chunk, x, y, type } = args;
+
+  if (isNegative) {
+    chunks["negatives"][chunk][x][y] = type;
+  } else {
+    chunks["positives"][chunk][x][y] = type;
+  }
 });
 socket.on("remove_block_to_client", (args) => {
-  objO.content = objO.content.filter((obj) => obj.id !== args);
+  const { isNegative, chunk, x, y } = args;
+
+  if (isNegative) {
+    delete chunks["negatives"][chunk][x][y];
+  } else {
+    delete chunks["positives"][chunk][x][y];
+  }
+  // objO.content = objO.content.filter((obj) => obj.id !== args);
 });
 socket.on("get_message", ({ id, message }) => {
   messages.push({ id, message });
@@ -116,7 +140,8 @@ function calculate() {
   origin.y = 0 - CAMERA.y;
   calculateCursor();
 
-  calculateCollisions();
+  //temp. disabled because of chunk implementation
+  //calculateCollisions();
   calculateCamera();
 }
 
@@ -131,6 +156,22 @@ window.addEventListener("keydown", (e) => {
   if (isTypingOn) {
     if (e.key.length === 1 && message.length <= 40) {
       message += e.key;
+    }
+  } else {
+    if (e.code === "Digit1" && !isTypingOn) {
+      blockType = 1;
+    }
+    if (e.code === "Digit2" && !isTypingOn) {
+      blockType = 2;
+    }
+    if (e.code === "Digit3" && !isTypingOn) {
+      blockType = 3;
+    }
+    if (e.code === "Digit4" && !isTypingOn) {
+      blockType = 4;
+    }
+    if (e.code === "Digit5" && !isTypingOn) {
+      blockType = 5;
     }
   }
 });
@@ -174,21 +215,6 @@ window.addEventListener("keyup", (e) => {
   }
   if (e.code === "KeyT" && !isTypingOn) {
     changeTypingOn();
-  }
-  if (e.code === "Digit1" && !isTypingOn) {
-    blockType = "grass_block";
-  }
-  if (e.code === "Digit2" && !isTypingOn) {
-    blockType = "dirt_block";
-  }
-  if (e.code === "Digit3" && !isTypingOn) {
-    blockType = "stone_block";
-  }
-  if (e.code === "Digit4" && !isTypingOn) {
-    blockType = "oak_log";
-  }
-  if (e.code === "Digit5" && !isTypingOn) {
-    blockType = "oak_leaves";
   }
 
   delete keyPressed[e.code];
@@ -263,7 +289,9 @@ function draw() {
   for (let p of players) {
     const { pos, width, height } = p;
     const color = id === p.id ? "red" : "blue";
-    drawObject({ pos, width, height, color });
+
+    drawPlayer({ pos, width, height, color });
+
     //player name
     if (time <= 75000 && time >= 12000) {
       ctx.fillStyle = "black";
@@ -276,15 +304,64 @@ function draw() {
       p.pos.y * zoom - CAMERA.y * zoom - 20
     );
   }
-  for (let object of objects) {
-    drawObject(object);
+
+  //Old implementation
+  // for (let object of objects) {
+  //   drawBlock(object);
+  // }
+  //New implementation for chunks
+  if (n_chunk_length > 0) {
+    for (const [chunkKey, chunkValue] of Object.entries(chunks.negatives)) {
+      for (const [columnKey, columnValue] of Object.entries(chunkValue)) {
+        for (const [blockKey, blockValue] of Object.entries(columnValue)) {
+          drawBlock({
+            pos: {
+              x: -(parseInt(chunkKey) * 16 * 50) + parseInt(columnKey) * 50,
+              y: parseInt(blockKey) * 50 * -1,
+            },
+            width: 50,
+            height: 50,
+            type: parseInt(blockValue),
+          });
+        }
+      }
+    }
+  }
+  if (p_chunk_length > 0) {
+    for (const [chunkKey, chunkValue] of Object.entries(chunks.positives)) {
+      for (const [columnKey, columnValue] of Object.entries(chunkValue)) {
+        for (const [blockKey, blockValue] of Object.entries(columnValue)) {
+          drawBlock({
+            pos: {
+              x: parseInt(chunkKey) * 16 * 50 + parseInt(columnKey) * 50,
+              y: parseInt(blockKey) * 50 * -1,
+            },
+            width: 50,
+            height: 50,
+            type: parseInt(blockValue),
+          });
+        }
+      }
+    }
   }
 
   drawInfo();
   drawCursor();
 }
 
-function drawObject(obj) {
+function drawPlayer(player) {
+  const { pos, width, height, color } = player;
+
+  ctx.fillStyle = color || "black";
+  ctx.fillRect(
+    pos.x * zoom - CAMERA.x * zoom,
+    pos.y * zoom - CAMERA.y * zoom,
+    width * zoom,
+    height * zoom
+  );
+}
+
+function drawBlock(obj) {
   const { pos, width: w, height: h } = obj;
   const color = obj?.color;
   const type = obj?.type;

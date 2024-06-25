@@ -23,32 +23,59 @@ export function getObject(x, y) {
 export function removeObject() {
   if (zoom !== 1) return;
   if (!canReach) return;
-  const x = Math.round(cursor.x - origin.x);
-  const y = Math.round(cursor.y - origin.y);
+  //'real' because it's not devided by 50 but it's the original
+  const real_x = Math.round(cursor.x - origin.x);
+  const real_y = Math.round(cursor.y - origin.y);
 
-  const id = getObject(x, y)?.id;
-  if (id) {
-    socket.emit("remove_block_to_server", id);
-  }
+  const chunk = Math.floor(real_x / 50 / 16);
+  const block_x = (real_x - chunk * 50 * 16) / 50;
+  const block_y = Math.abs(real_y / 50);
+
+  const removeableBlock = {
+    isNegative: chunk < 0,
+    chunk: Math.abs(chunk),
+    x: block_x,
+    y: block_y,
+  };
+  socket.emit("remove_block_to_server", removeableBlock);
+  // const id = getObject(x, y)?.id;
+  // if (id) {
+  //   socket.emit("remove_block_to_server", id);
+  // }
 }
 
 export function addObject() {
   if (zoom !== 1) return;
   if (!canReach) return;
 
-  const x = Math.round(cursor.x - origin.x);
-  const y = Math.round(cursor.y - origin.y);
-  const tryId = getObject(x, y);
+  const real_x = Math.round(cursor.x - origin.x);
+  const real_y = Math.round(cursor.y - origin.y);
 
-  if (!tryId) {
-    socket.emit("place_block_to_server", {
-      x,
-      y,
-      w: 50,
-      h: 50,
-      type: blockType,
-    });
-  }
+  const chunk = Math.floor(real_x / 50 / 16);
+  const block_x = (real_x - chunk * 50 * 16) / 50;
+  const block_y = Math.abs(real_y / 50);
+
+  const placeableBlock = {
+    isNegative: chunk < 0,
+    chunk: Math.abs(chunk),
+    x: block_x,
+    y: block_y,
+    type: blockType,
+  };
+
+  socket.emit("place_block_to_server", placeableBlock);
+
+  // const tryId = getObject(x, y);
+
+  // if (!tryId) {
+  //   socket.emit("place_block_to_server", {
+  //     x,
+  //     y,
+  //     w: 50,
+  //     h: 50,
+  //     type: blockType,
+  //   });
+  // }
 }
 
 export function update() {}
