@@ -166,7 +166,16 @@ gameTime();
 
 function getDate() {
   const date = new Date();
-  return `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
+
+  const h = date.getHours();
+  const m = date.getMinutes();
+  const s = date.getSeconds();
+
+  const hours = h < 10 ? `0${h}` : h;
+  const minutes = m < 10 ? `0${m}` : m;
+  const seconds = s < 10 ? `0${s}` : s;
+
+  return `${hours}:${minutes}:${seconds}`;
 }
 
 //IO
