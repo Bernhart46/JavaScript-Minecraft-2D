@@ -368,10 +368,11 @@ function draw() {
     } else {
       ctx.fillStyle = "white";
     }
+    ctx.font = `${14 * zoom}px Arial`;
     ctx.fillText(
       `${p.name}`,
       p.pos.x * zoom - CAMERA.x * zoom,
-      p.pos.y * zoom - CAMERA.y * zoom - 20
+      p.pos.y * zoom - CAMERA.y * zoom - 20 * zoom
     );
   }
 
@@ -459,6 +460,7 @@ function drawInfo() {
   } else {
     ctx.fillStyle = "white";
   }
+  ctx.font = "14px Arial";
   ctx.fillText(`Player_X: ${player.pos.x}`, 10, 20);
   ctx.fillText(`Player_Y: ${-player.pos.y - playerHeight}`, 10, 40);
   ctx.fillRect(10, 45, 150, 1);
