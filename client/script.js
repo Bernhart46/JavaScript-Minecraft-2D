@@ -517,8 +517,7 @@ function drawChunkBorders() {
 
   // console.log(CAMERA.x);
   //pos
-  let temp = 2;
-  const realChunkNumber = temp / 2;
+  const realChunkNumber = Math.ceil(chunkNumber / 2);
   for (let i = 0 + playerChunk; i < realChunkNumber + 3 + playerChunk; i++) {
     const x = i * 800 * zoom - CAMERA.x * zoom;
     ctx.strokeRect(x, 0, 1, window.innerHeight);
@@ -546,11 +545,6 @@ function animate() {
 }
 animate();
 
-// socket.emit("get_chunk_to_server", {
-//   isNegative: true,
-//   chunkIndex: playerChunk + chunkNumber + 1,
-// });
-// const length = Object.keys(chunks["negatives"]).length;
 //This if for new chunks from the server
 function refreshChunks() {
   if (prevPlayerChunk === playerChunk) return;
