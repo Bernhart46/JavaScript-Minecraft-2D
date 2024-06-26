@@ -1,6 +1,6 @@
 "use script";
 import { Vector2D } from "./vector2d.js";
-import { holdMouseAction, leftClick, rightClick, update } from "./game/game.js";
+import { holdMouseAction, leftClick, rightClick } from "./game/game.js";
 import { formatTime } from "./utils/formatTime.js";
 import { getSkyColor } from "./game/getSkyColor.js";
 import { getAlpha } from "./game/getAlpha.js";
@@ -24,15 +24,15 @@ const blocks = {
 export let blockType = 1;
 
 export const socket = io();
-export let objO;
 let players = [];
 export let id;
 let player;
 let playerChunk = 0;
+let prevPlayerChunk = 0;
 export let time = 0;
 export let messages = [];
 export let message = "";
-const chunkNumber = 4;
+const chunkNumber = 2;
 let chunks = {};
 let n_chunk_length = 0;
 let p_chunk_length = 0;
@@ -41,7 +41,7 @@ let savedID = localStorage.getItem("player_id");
 
 const canvas = document.querySelector("#myCanvas");
 export const ctx = canvas.getContext("2d");
-const fps = 40; //Default: 30
+const fps = 30; //Default: 30
 //Custom time
 const tickSpeed = 40; //Default: 40
 export const keyPressed = {};
@@ -77,7 +77,6 @@ socket.on("already_connected", () => {
   document.body.innerHTML = "ERROR: Already connected!";
 });
 socket.on("init_response", (args) => {
-  objO = args.objects;
   chunks = args.chunksToSend;
   players = args.players;
   id = args.id;
@@ -92,8 +91,6 @@ socket.on("init_response", (args) => {
   //calculate chunk length (here because it's only once when update)
   n_chunk_length = Object.keys(chunks.negatives).length;
   p_chunk_length = Object.keys(chunks.positives).length;
-
-  console.log(chunks);
 });
 
 socket.on("get_pos", (args) => {
@@ -147,7 +144,6 @@ socket.on("remove_block_to_client", (args) => {
     touchChunk(1, chunk, x);
     delete chunks["positives"][chunk][x][y];
   }
-  // objO.content = objO.content.filter((obj) => obj.id !== args);
 });
 socket.on("get_message", ({ id, message }) => {
   messages.push({ id, message });
@@ -158,6 +154,14 @@ socket.on("new_name_setted", ({ id, newName }) => {
 });
 socket.on("new_time_setted", ({ newTime }) => {
   time = newTime;
+});
+socket.on("get_chunk_to_client", (args) => {
+  const { isNegative, chunkToSend, chunkIndex } = args;
+  if (isNegative) {
+    chunks["negatives"][Math.abs(chunkIndex)] = chunkToSend;
+  } else {
+    chunks["positives"][chunkIndex] = chunkToSend;
+  }
 });
 
 //
@@ -294,7 +298,6 @@ window.addEventListener("wheel", (e) => {
     }
   }
 });
-
 window.addEventListener("mousemove", (e) => {
   mouse.x = e.clientX;
   mouse.y = e.clientY;
@@ -318,7 +321,6 @@ gameTime();
 //ONLY FOR DRAWING NOT CALCULING!!! CALCULATIONS ARE FOR THE TICKS TO DECIDE NOT THE FPS
 function draw() {
   if (!player) return;
-  // const objects = objO.content;
   for (let p of players) {
     const { pos, width, height } = p;
     const color = id === p.id ? "red" : "blue";
@@ -515,8 +517,9 @@ function drawChunkBorders() {
 
   // console.log(CAMERA.x);
   //pos
-  const realChunkNumber = chunkNumber / 2;
-  for (let i = 0 + playerChunk; i < realChunkNumber + 2 + playerChunk; i++) {
+  let temp = 2;
+  const realChunkNumber = temp / 2;
+  for (let i = 0 + playerChunk; i < realChunkNumber + 3 + playerChunk; i++) {
     const x = i * 800 * zoom - CAMERA.x * zoom;
     ctx.strokeRect(x, 0, 1, window.innerHeight);
   }
@@ -543,15 +546,88 @@ function animate() {
 }
 animate();
 
+// socket.emit("get_chunk_to_server", {
+//   isNegative: true,
+//   chunkIndex: playerChunk + chunkNumber + 1,
+// });
+// const length = Object.keys(chunks["negatives"]).length;
+//This if for new chunks from the server
+function refreshChunks() {
+  if (prevPlayerChunk === playerChunk) return;
+  const p_array = Object.keys(chunks["positives"]);
+  const n_array = Object.keys(chunks["negatives"]);
+  const is_p_empty = p_array.length === 0;
+  const is_n_empty = n_array.length === 0;
+  const p_min = Math.min(...p_array);
+  const p_max = Math.max(...p_array);
+  const n_min = Math.min(...n_array);
+  const n_max = Math.max(...n_array);
+  if (prevPlayerChunk < playerChunk) {
+    //Player went positive
+    //delete back
+    if (!is_n_empty) {
+      delete chunks["negatives"][n_max];
+    } else {
+      delete chunks["positives"][p_min];
+    }
+    //add front
+    if (!is_p_empty) {
+      socket.emit("get_chunk_to_server", {
+        isNegative: false,
+        chunkIndex: p_max + 1,
+      });
+    } else {
+      if (n_min === 1) {
+        socket.emit("get_chunk_to_server", {
+          isNegative: false,
+          chunkIndex: 0,
+        });
+      } else {
+        socket.emit("get_chunk_to_server", {
+          isNegative: true,
+          chunkIndex: n_min - 1,
+        });
+      }
+    }
+  } else {
+    //Player went negative
+    //delete back
+    if (!is_p_empty) {
+      delete chunks["positives"][p_max];
+    } else {
+      delete chunks["negatives"][n_min];
+    }
+    //add front
+    if (!is_n_empty) {
+      socket.emit("get_chunk_to_server", {
+        isNegative: true,
+        chunkIndex: n_max + 1,
+      });
+    } else {
+      if (p_min === 0) {
+        socket.emit("get_chunk_to_server", {
+          isNegative: true,
+          chunkIndex: 1,
+        });
+      } else {
+        socket.emit("get_chunk_to_server", {
+          isNegative: false,
+          chunkIndex: p_min - 1,
+        });
+      }
+    }
+  }
+  prevPlayerChunk = playerChunk;
+}
+
 let hitBottom = false;
 let hitLeft = false;
 let hitRight = false;
 let previousPosX = 0;
 
 function calculateCollisions() {
-  if (!objO) return;
   if (!player) return;
-
+  refreshChunks();
   //Select the surrounding blocks
   const playerBlockX = Math.floor(player.pos.x / 50);
   const playerBlockY = -Math.floor((player.pos.y + playerHeight) / 50);
@@ -668,7 +744,7 @@ function calculateCollisions() {
     if (playerRight !== closestLeft) {
       hitRight = false;
       if (keyPressed["ControlLeft"] || keyPressed["ControlRight"]) {
-        velocity.x = moveSpeed * 2;
+        velocity.x = moveSpeed * 4;
       } else {
         velocity.x = moveSpeed;
       }
@@ -679,7 +755,7 @@ function calculateCollisions() {
     if (playerLeft !== closestRight) {
       hitLeft = false;
       if (keyPressed["ControlLeft"] || keyPressed["ControlRight"]) {
-        velocity.x = -moveSpeed * 2;
+        velocity.x = -moveSpeed * 4;
       } else {
         velocity.x = -moveSpeed;
       }

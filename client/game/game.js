@@ -1,5 +1,4 @@
 import {
-  objO as objects,
   socket,
   origin,
   cursor,
@@ -61,8 +60,6 @@ export function addObject() {
 
   socket.emit("place_block_to_server", placeableBlock);
 }
-
-export function update() {}
 
 export function leftClick() {
   removeObject();

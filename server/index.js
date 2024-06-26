@@ -55,42 +55,6 @@ class Block {
     this.type = type;
   }
 }
-let objects = {
-  content: [
-    new Block({
-      id: 1,
-      x: 0,
-      y: -100,
-      w: 50,
-      h: 50,
-      type: "grass_block",
-    }),
-    new Block({
-      id: 2,
-      x: 50,
-      y: -100,
-      w: 50,
-      h: 50,
-      type: "grass_block",
-    }),
-    new Block({
-      id: 3,
-      x: 100,
-      y: -100,
-      w: 50,
-      h: 50,
-      type: "grass_block",
-    }),
-    new Block({
-      id: 4,
-      x: 150,
-      y: -100,
-      w: 50,
-      h: 50,
-      type: "grass_block",
-    }),
-  ],
-};
 let players = [];
 let messages = [];
 let playerNames = {};
@@ -99,30 +63,20 @@ let playerIDs = {};
 let positive_chunks = {
   //0th chunk -> chunk is from y 0 to y 255
   0: generateChunk(),
-  1: generateChunk(),
 };
-let negative_chunks = {
-  1: generateChunk(),
-  2: generateChunk(),
-};
+let negative_chunks = {};
 
-// for testing
-// for (const [key, value] of Object.entries({ 0: 1, 55: 3, 3: 2, 1: 2 })) {
-//   console.log(`Key: ${key}, Value: ${value}`);
-// }
-
-// console.log(positive_chunks);
 //TEMPORARY GENERATOR
 function generateChunk() {
   const chunk = {
     0: { 0: 3, 1: 2, 2: 5 },
     1: { 0: 3, 1: 2, 2: 1 },
     2: { 0: 3, 1: 2, 2: 1 },
-    3: { 0: 3, 1: 2, 2: 1, 6: 5, 7: 5 },
-    4: { 0: 3, 1: 2, 2: 1, 6: 5, 7: 5, 8: 5, 9: 5 },
-    5: { 0: 3, 1: 2, 2: 1, 3: 4, 4: 4, 5: 4, 6: 5, 7: 5, 8: 5, 9: 5 },
-    6: { 0: 3, 1: 2, 2: 1, 6: 5, 7: 5, 8: 5, 9: 5 },
-    7: { 0: 3, 1: 2, 2: 1, 6: 5, 7: 5 },
+    3: { 0: 3, 1: 2, 2: 1 },
+    4: { 0: 3, 1: 2, 2: 1 },
+    5: { 0: 3, 1: 2, 2: 1 },
+    6: { 0: 3, 1: 2, 2: 1 },
+    7: { 0: 3, 1: 2, 2: 1 },
     8: { 0: 3, 1: 2, 2: 1 },
     9: { 0: 3, 1: 2, 2: 1 },
     10: { 0: 3, 1: 2, 2: 1 },
@@ -143,14 +97,14 @@ function generateChunk() {
 let time = 7 * 60 * 60;
 
 fs.readFile(path.join(__dirname, "saves", "save.json"), "utf8", (err, d) => {
-  if (err) throw err;
-
-  const data = JSON.parse(d);
-  playerNames = data.playerNames;
-  playerIDs = data.playerIDs;
-  positive_chunks = data.positive_chunks;
-  negative_chunks = data.negative_chunks;
-  time = data.time;
+  if (!err) {
+    const data = JSON.parse(d);
+    playerNames = data.playerNames;
+    playerIDs = data.playerIDs;
+    positive_chunks = data.positive_chunks;
+    negative_chunks = data.negative_chunks;
+    time = data.time;
+  }
 });
 
 function gameTime() {
@@ -180,20 +134,14 @@ function getDate() {
 }
 
 //If interract with a chunk which doesn't exists, create it
-function touchChunk(type, chunk, x) {
+function touchChunk(type, chunk) {
   if (type === 1) {
     if (positive_chunks[chunk] === undefined) {
-      positive_chunks[chunk] = {};
-    }
-    if (positive_chunks[chunk][x] === undefined) {
-      positive_chunks[chunk][x] = {};
+      positive_chunks[chunk] = generateChunk();
     }
   } else {
     if (negative_chunks[chunk] === undefined) {
-      negative_chunks[chunk] = {};
-    }
-    if (negative_chunks[chunk][x] === undefined) {
-      negative_chunks[chunk][x] = {};
+      negative_chunks[chunk] = generateChunk();
     }
   }
 }
@@ -229,21 +177,17 @@ io.on("connection", (socket) => {
 
     //Positive chunks
     for (let i = 0; i <= chunks; i++) {
-      if (positive_chunks[i]) {
-        chunksToSend.positives[i] = positive_chunks[i];
-      }
+      touchChunk(1, i);
+      chunksToSend.positives[i] = positive_chunks[i];
     }
     //Negative chunks
     for (let i = 1; i <= chunks; i++) {
-      if (negative_chunks[i]) {
-        chunksToSend.negatives[i] = negative_chunks[i];
-      }
+      touchChunk(0, i);
+      chunksToSend.negatives[i] = negative_chunks[i];
     }
 
     console.log(`${getDate()}: ${newPlayer.name} connected`);
-
     socket.emit("init_response", {
-      objects,
       chunksToSend,
       players,
       id: newPlayer.id,
@@ -257,13 +201,13 @@ io.on("connection", (socket) => {
       const { isNegative, chunk, x, y, type } = args;
 
       if (isNegative) {
-        touchChunk(0, chunk, x);
+        touchChunk(0, chunk);
         if (!negative_chunks[chunk][x][y]) {
           negative_chunks[chunk][x][y] = type;
           io.emit("place_block_to_client", args);
         }
       } else {
-        touchChunk(1, chunk, x);
+        touchChunk(1, chunk);
         if (!positive_chunks[chunk][x][y]) {
           positive_chunks[chunk][x][y] = type;
           io.emit("place_block_to_client", args);
@@ -277,13 +221,32 @@ io.on("connection", (socket) => {
       const { isNegative, chunk, x, y } = args;
       // objects.content = objects.content.filter((x) => x.id !== args);
       if (isNegative) {
-        touchChunk(0, chunk, x);
+        touchChunk(0, chunk);
         delete negative_chunks[chunk][x][y];
       } else {
-        touchChunk(1, chunk, x);
+        touchChunk(1, chunk);
         delete positive_chunks[chunk][x][y];
       }
       io.emit("remove_block_to_client", args);
+    });
+
+    //Get chunk
+    socket.on("get_chunk_to_server", (args) => {
+      const { isNegative, chunkIndex } = args;
+      let chunkToSend = {};
+      if (isNegative) {
+        touchChunk(0, Math.abs(chunkIndex));
+        chunkToSend = negative_chunks[Math.abs(chunkIndex)];
+      } else {
+        touchChunk(1, chunkIndex);
+        chunkToSend = positive_chunks[chunkIndex];
+      }
+
+      socket.emit("get_chunk_to_client", {
+        isNegative,
+        chunkToSend,
+        chunkIndex,
+      });
     });
 
     //MOVEMENT
