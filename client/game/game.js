@@ -26,6 +26,8 @@ export function removeObject() {
   //'real' because it's not devided by 50 but it's the original
   const real_x = Math.round(cursor.x - origin.x);
   const real_y = Math.round(cursor.y - origin.y);
+  //return if below bedrock
+  if (real_y > 0) return;
 
   const chunk = Math.floor(real_x / 50 / 16);
   const block_x = (real_x - chunk * 50 * 16) / 50;
@@ -50,6 +52,8 @@ export function addObject() {
 
   const real_x = Math.round(cursor.x - origin.x);
   const real_y = Math.round(cursor.y - origin.y);
+  //return if below bedrock
+  if (real_y > 0) return;
 
   const chunk = Math.floor(real_x / 50 / 16);
   const block_x = (real_x - chunk * 50 * 16) / 50;
