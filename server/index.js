@@ -142,15 +142,16 @@ function generateChunk() {
 
 let time = 7 * 60 * 60;
 
-// fs.readFile(path.join(__dirname, "saves", "save.json"), "utf8", (err, d) => {
-//   if (err) throw err;
-//
-//   const data = JSON.parse(d);
-//   playerNames = data.playerNames;
-//   playerIDs = data.playerIDs;
-//   objects = data.objects;
-//   time = data.time;
-// });
+fs.readFile(path.join(__dirname, "saves", "save.json"), "utf8", (err, d) => {
+  if (err) throw err;
+
+  const data = JSON.parse(d);
+  playerNames = data.playerNames;
+  playerIDs = data.playerIDs;
+  positive_chunks = data.positive_chunks;
+  negative_chunks = data.negative_chunks;
+  time = data.time;
+});
 
 function gameTime() {
   setInterval(() => {
@@ -354,22 +355,23 @@ server.listen(3000, () => {
 });
 
 //SAVE
-// process.on("SIGINT", () => {
-//   console.log("SAVING...");
-//   saveDataBeforeExit().then(() => {
-//     console.log("SAVED...");
-//     process.exit(0);
-//   });
-// });
-//
-// async function saveDataBeforeExit() {
-//   await fs.promises.writeFile(
-//     path.join(__dirname, "saves", "save.json"),
-//     JSON.stringify({
-//       objects: objects,
-//       playerNames: playerNames,
-//       playerIDs: playerIDs,
-//       time: time,
-//     })
-//   );
-// }
+process.on("SIGINT", () => {
+  console.log("SAVING...");
+  saveDataBeforeExit().then(() => {
+    console.log("SAVED...");
+    process.exit(0);
+  });
+});
+
+async function saveDataBeforeExit() {
+  await fs.promises.writeFile(
+    path.join(__dirname, "saves", "save.json"),
+    JSON.stringify({
+      positive_chunks: positive_chunks,
+      negative_chunks: negative_chunks,
+      playerNames: playerNames,
+      playerIDs: playerIDs,
+      time: time,
+    })
+  );
+}

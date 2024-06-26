@@ -12,6 +12,7 @@ const stoneBlock = document.getElementById("stone_block");
 const oakLog = document.getElementById("oak_log");
 const oakLeaves = document.getElementById("oak_leaves");
 
+//VARIABLES
 const blocks = {
   1: grassBlock,
   2: dirtBlock,
@@ -37,6 +38,37 @@ let n_chunk_length = 0;
 let p_chunk_length = 0;
 
 let savedID = localStorage.getItem("player_id");
+
+const canvas = document.querySelector("#myCanvas");
+export const ctx = canvas.getContext("2d");
+const fps = 40; //Default: 30
+//Custom time
+const tickSpeed = 40; //Default: 40
+export const keyPressed = {};
+export let zoom = 1; //Default : 1
+const gravity = 3; //Default: 3
+const moveSpeed = 10; //Default: 8
+const jumpHeight = 30; //Default: 30
+export const playerHeight = 90; //Default: 100
+const reach = 6; //Default: 6
+export let canReach = false;
+let isInfo = true;
+let isChunks = false;
+let objects = []; //ARRAY FOR OBJECTS
+
+canvas.setAttribute("width", window.innerWidth);
+canvas.setAttribute("height", window.innerHeight);
+
+export const CAMERA = new Vector2D(0, 0);
+export const CAMERA_ZOOMLESS = new Vector2D(0, 0);
+export const velocity = new Vector2D(0, 0);
+export const origin = new Vector2D(0, 0);
+export const mouse = new Vector2D(0, 0);
+export const cursor = new Vector2D(0, 0);
+
+let cursor_block_x = 0;
+let cursor_block_y = 0;
+
 //SOCKETS
 socket.on("connect", () => {
   socket.emit("init", { id: savedID, chunks: chunkNumber });
@@ -128,36 +160,8 @@ socket.on("new_time_setted", ({ newTime }) => {
   time = newTime;
 });
 
-//VARIABLES
-const canvas = document.querySelector("#myCanvas");
-export const ctx = canvas.getContext("2d");
-const fps = 40; //Default: 30
-//Custom time
-const tickSpeed = 40; //Default: 40
-export const keyPressed = {};
-export let zoom = 1; //Default : 1
-const gravity = 3; //Default: 3
-const moveSpeed = 10; //Default: 8
-const jumpHeight = 30; //Default: 30
-export const playerHeight = 90; //Default: 100
-const reach = 6; //Default: 6
-export let canReach = false;
-let isInfo = true;
-let objects = []; //ARRAY FOR OBJECTS
-
-canvas.setAttribute("width", window.innerWidth);
-canvas.setAttribute("height", window.innerHeight);
-
-export const CAMERA = new Vector2D(0, 0);
-export const CAMERA_ZOOMLESS = new Vector2D(0, 0);
-export const velocity = new Vector2D(0, 0);
-export const origin = new Vector2D(0, 0);
-export const mouse = new Vector2D(0, 0);
-export const cursor = new Vector2D(0, 0);
-
-let cursor_block_x = 0;
-let cursor_block_y = 0;
-
+//
+// GAME
 //Reason why it's separate from draw: Because in here, it calculates without being affected by the fps!
 function calculate() {
   origin.x = 0 - CAMERA.x;
@@ -233,6 +237,9 @@ window.addEventListener("keyup", (e) => {
 
   if (e.code === "F3") {
     isInfo = !isInfo;
+  }
+  if (e.code === "F4") {
+    isChunks = !isChunks;
   }
   if (e.code === "F5") {
     location.reload();
@@ -371,6 +378,7 @@ function draw() {
 
   drawInfo();
   drawCursor();
+  drawChunkBorders();
 }
 
 function drawPlayer(player) {
@@ -499,6 +507,24 @@ function calculateCursor() {
   const m_y = mouse.y - origin.y - velocity.y;
   cursor.x = origin.x + Math.floor(m_x / 50) * 50;
   cursor.y = origin.y + Math.floor(m_y / 50) * 50;
+}
+
+function drawChunkBorders() {
+  if (!isChunks) return;
+  ctx.strokeStyle = "red";
+
+  // console.log(CAMERA.x);
+  //pos
+  const realChunkNumber = chunkNumber / 2;
+  for (let i = 0 + playerChunk; i < realChunkNumber + 2 + playerChunk; i++) {
+    const x = i * 800 * zoom - CAMERA.x * zoom;
+    ctx.strokeRect(x, 0, 1, window.innerHeight);
+  }
+  //neg
+  for (let i = -realChunkNumber - 1 + playerChunk; i < 0 + playerChunk; i++) {
+    const x = i * 800 * zoom - CAMERA.x * zoom;
+    ctx.strokeRect(x, 0, 1, window.innerHeight);
+  }
 }
 
 //ANIMATE (fps)
@@ -642,7 +668,7 @@ function calculateCollisions() {
     if (playerRight !== closestLeft) {
       hitRight = false;
       if (keyPressed["ControlLeft"] || keyPressed["ControlRight"]) {
-        velocity.x = moveSpeed * 1.5;
+        velocity.x = moveSpeed * 2;
       } else {
         velocity.x = moveSpeed;
       }
@@ -653,7 +679,7 @@ function calculateCollisions() {
     if (playerLeft !== closestRight) {
       hitLeft = false;
       if (keyPressed["ControlLeft"] || keyPressed["ControlRight"]) {
-        velocity.x = -moveSpeed * 1.5;
+        velocity.x = -moveSpeed * 2;
       } else {
         velocity.x = -moveSpeed;
       }

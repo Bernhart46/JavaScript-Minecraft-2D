@@ -15,19 +15,17 @@ Here is where I left:
  - send chunkNumber from client to server through "init"
  - render chunks, add block, remove block
  - ADD 0 ON SINGLE DIGITS ON TIMER ON SERVER CONSOLE ex: 02
-  - Fix object selection in collision (something fucked up)
-
-What I need to do:
+ - Fix object selection in collision (something fucked up)
  - don't place or remove block below y 0
  - rework physics: now: object ARRAY -> after: surrounding ARRAY
    -> put the surrounding blocks into an array and go through them
 
+What I need to do:
+ - put the name draw below, so it can be seen on blocks as well
  - Send new chunks based on player X movements (fileread sync!!! not to block
   the main thread) (first do it without files and fileread, just get the new
   chunks from the pos&neg objects)
  )
- - cleanup chunks (if a chunk does not have blocks ,remove the chunk, same with
- columns)
  -> region files: 1 file -> 32 chunks
  -> player data into different file
 
