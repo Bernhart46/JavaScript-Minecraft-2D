@@ -19,9 +19,9 @@ Here is where I left:
  - don't place or remove block below y 0
  - rework physics: now: object ARRAY -> after: surrounding ARRAY
    -> put the surrounding blocks into an array and go through them
+ - put the name draw below, so it can be seen on blocks as well
 
 What I need to do:
- - put the name draw below, so it can be seen on blocks as well
  - Send new chunks based on player X movements (fileread sync!!! not to block
   the main thread) (first do it without files and fileread, just get the new
   chunks from the pos&neg objects)

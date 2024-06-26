@@ -321,27 +321,6 @@ gameTime();
 //ONLY FOR DRAWING NOT CALCULING!!! CALCULATIONS ARE FOR THE TICKS TO DECIDE NOT THE FPS
 function draw() {
   if (!player) return;
-  for (let p of players) {
-    const { pos, width, height } = p;
-    const color = id === p.id ? "red" : "blue";
-
-    drawPlayer({ pos, width, height, color });
-
-    //player name
-    if (time <= 75000 && time >= 12000) {
-      ctx.fillStyle = "black";
-    } else {
-      ctx.fillStyle = "white";
-    }
-    ctx.fillText(
-      `${p.name}`,
-      p.pos.x * zoom - CAMERA.x * zoom,
-      p.pos.y * zoom - CAMERA.y * zoom - 20
-    );
-  }
-
-  //Old implementation
-
   //New implementation for chunks
   if (n_chunk_length > 0) {
     for (const [chunkKey, chunkValue] of Object.entries(chunks.negatives)) {
@@ -376,6 +355,24 @@ function draw() {
         }
       }
     }
+  }
+  for (let p of players) {
+    const { pos, width, height } = p;
+    const color = id === p.id ? "red" : "blue";
+
+    drawPlayer({ pos, width, height, color });
+
+    //player name
+    if (time <= 75000 && time >= 12000) {
+      ctx.fillStyle = "black";
+    } else {
+      ctx.fillStyle = "white";
+    }
+    ctx.fillText(
+      `${p.name}`,
+      p.pos.x * zoom - CAMERA.x * zoom,
+      p.pos.y * zoom - CAMERA.y * zoom - 20
+    );
   }
 
   drawInfo();
