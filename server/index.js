@@ -6,7 +6,7 @@ import { Server } from "socket.io";
 import { v4 } from "uuid";
 import fs from "fs";
 import path from "path";
-
+console.clear();
 const app = express();
 const server = createServer(app);
 const io = new Server(server);
@@ -34,7 +34,7 @@ class Player {
     this.width = 50;
     this.pos = {
       x: 50,
-      y: 0 - this.height - 100,
+      y: 0 - this.height - 150,
     };
   }
   setId(newId) {
@@ -60,7 +60,7 @@ let objects = {
     new Block({
       id: 1,
       x: 0,
-      y: 0,
+      y: -100,
       w: 50,
       h: 50,
       type: "grass_block",
@@ -68,7 +68,7 @@ let objects = {
     new Block({
       id: 2,
       x: 50,
-      y: 0,
+      y: -100,
       w: 50,
       h: 50,
       type: "grass_block",
@@ -76,7 +76,7 @@ let objects = {
     new Block({
       id: 3,
       x: 100,
-      y: 0,
+      y: -100,
       w: 50,
       h: 50,
       type: "grass_block",
@@ -84,7 +84,7 @@ let objects = {
     new Block({
       id: 4,
       x: 150,
-      y: 0,
+      y: -100,
       w: 50,
       h: 50,
       type: "grass_block",
@@ -203,6 +203,7 @@ io.on("connection", (socket) => {
     const isPositive = newPlayer.pos.x > 0;
     const playerChunk = Math.floor(newPlayer.pos.x / 50 / 16);
     //-1 because of the arrays start with 0
+    //IDK WHY I DON'T USE THIS: DELETE IF NOT NEEDED
     const minChunk = playerChunk - chunks;
     const maxChunk = playerChunk + chunks;
 

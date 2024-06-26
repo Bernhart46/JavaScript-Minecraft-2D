@@ -27,6 +27,7 @@ export let objO;
 let players = [];
 export let id;
 let player;
+let playerChunk = 0;
 export let time = 0;
 export let messages = [];
 export let message = "";
@@ -141,7 +142,7 @@ function calculate() {
   calculateCursor();
 
   //temp. disabled because of chunk implementation
-  //calculateCollisions();
+  calculateCollisions();
   calculateCamera();
 }
 
@@ -306,9 +307,7 @@ function draw() {
   }
 
   //Old implementation
-  // for (let object of objects) {
-  //   drawBlock(object);
-  // }
+
   //New implementation for chunks
   if (n_chunk_length > 0) {
     for (const [chunkKey, chunkValue] of Object.entries(chunks.negatives)) {
@@ -366,8 +365,9 @@ function drawBlock(obj) {
   const color = obj?.color;
   const type = obj?.type;
   if (!type) {
-    ctx.fillStyle = color || "black";
-    ctx.fillRect(
+    ctx.strokeStyle = "purple";
+    ctx.lineWidth = 5;
+    ctx.strokeRect(
       pos.x * zoom - CAMERA.x * zoom,
       pos.y * zoom - CAMERA.y * zoom,
       w * zoom,
@@ -458,12 +458,14 @@ function drawInfo() {
   ctx.fillRect(10, 265, 150, 1);
   ctx.fillText(`name: ${player.name}`, 10, 280);
   ctx.fillText(`Block: ${blockType} (change with numbers 1..3)`, 10, 300);
-  ctx.fillText("You can turn this InfoBox off by pressing F3", 10, 320);
+  ctx.fillText(`Chunk: ${playerChunk}`, 10, 320);
+  ctx.fillText("You can turn this InfoBox off by pressing F3", 10, 340);
 }
 
 function drawCursor() {
   if (zoom !== 1) return;
   if (!canReach) return;
+  ctx.lineWidth = 1;
   ctx.strokeStyle = "red";
   ctx.strokeRect(cursor.x - velocity.x, cursor.y - velocity.y, 50, 50);
 }
@@ -496,19 +498,58 @@ let hitRight = false;
 let previousPosX = 0;
 
 function calculateCollisions() {
-  // const objects = objO.content;
   if (!objO) return;
   if (!player) return;
-  objects = objO.content.filter((obj) => {
-    if (
-      obj.pos.x >= CAMERA_ZOOMLESS.x - 100 &&
-      obj.pos.y >= CAMERA_ZOOMLESS.y - 100 &&
-      obj.pos.x + obj.width <= window.innerWidth + CAMERA_ZOOMLESS.x + 100 &&
-      obj.pos.y + obj.height <= window.innerHeight + CAMERA_ZOOMLESS.y + 100
-    ) {
-      return obj;
+
+  //Select the surrounding blocks
+  const playerBlockX = Math.floor(player.pos.x / 50);
+  const playerBlockY = -Math.floor((player.pos.y + playerHeight) / 50);
+  playerChunk = Math.floor(player.pos.x / 50 / 16);
+  const minX = playerBlockX - 2;
+  const maxX = playerBlockX + 3;
+  const minY = playerBlockY - 1;
+  const maxY = playerBlockY + 5;
+
+  objects = [];
+
+  for (let xx = minX; xx < maxX; xx++) {
+    for (let yy = minY; yy < maxY; yy++) {
+      const blockChunk = Math.floor(xx / 16);
+      const isNegative = blockChunk < 0;
+      let blockExists = false;
+      if (isNegative) {
+        const nBlockX = Math.abs(-blockChunk * 16 + xx);
+        if (
+          chunks.negatives &&
+          chunks.negatives[Math.abs(blockChunk)] &&
+          chunks.negatives[Math.abs(blockChunk)][nBlockX]
+        ) {
+          blockExists = chunks.negatives[Math.abs(blockChunk)][nBlockX][yy];
+        }
+      } else {
+        const blockX = xx - blockChunk * 16;
+        if (
+          chunks.positives &&
+          chunks.positives[blockChunk] &&
+          chunks.positives[blockChunk][blockX]
+        ) {
+          blockExists = chunks.positives[blockChunk][blockX][yy];
+        }
+      }
+
+      if (blockExists) {
+        objects.push({
+          pos: {
+            x: xx * 50,
+            y: yy * 50 * -1,
+          },
+          width: 50,
+          height: 50,
+        });
+      }
     }
-  });
+  }
+
   let tops = [];
   let bottoms = [];
   let lefts = [];

@@ -14,9 +14,11 @@ Here is where I left:
  - remade the data structure for storing chunks (obj[])
  - send chunkNumber from client to server through "init"
  - render chunks, add block, remove block
+ - ADD 0 ON SINGLE DIGITS ON TIMER ON SERVER CONSOLE ex: 02
 
 What I need to do:
- - ADD 0 ON SINGLE DIGITS ON TIMER ON SERVER CONSOLE ex: 02
+ - Fix object selection in collision (something fucked up)
+ - don't place or remove block below y 0
  - rework physics: now: object ARRAY -> after: surrounding ARRAY
    -> put the surrounding blocks into an array and go through them
 
