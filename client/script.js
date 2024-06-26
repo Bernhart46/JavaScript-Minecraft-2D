@@ -108,7 +108,7 @@ socket.on("new_time_setted", ({ newTime }) => {
 //VARIABLES
 const canvas = document.querySelector("#myCanvas");
 export const ctx = canvas.getContext("2d");
-const fps = 30; //Default: 30
+const fps = 40; //Default: 30
 //Custom time
 const tickSpeed = 40; //Default: 40
 export const keyPressed = {};
@@ -259,7 +259,9 @@ window.addEventListener("wheel", (e) => {
       zoom -= 0.1;
     }
   } else {
-    zoom += 0.1;
+    if (zoom < 3) {
+      zoom += 0.1;
+    }
   }
 });
 

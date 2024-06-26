@@ -40,10 +40,6 @@ export function removeObject() {
     y: block_y,
   };
   socket.emit("remove_block_to_server", removeableBlock);
-  // const id = getObject(x, y)?.id;
-  // if (id) {
-  //   socket.emit("remove_block_to_server", id);
-  // }
 }
 
 export function addObject() {
@@ -68,18 +64,6 @@ export function addObject() {
   };
 
   socket.emit("place_block_to_server", placeableBlock);
-
-  // const tryId = getObject(x, y);
-
-  // if (!tryId) {
-  //   socket.emit("place_block_to_server", {
-  //     x,
-  //     y,
-  //     w: 50,
-  //     h: 50,
-  //     type: blockType,
-  //   });
-  // }
 }
 
 export function update() {}
