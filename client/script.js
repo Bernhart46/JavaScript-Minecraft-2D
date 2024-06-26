@@ -137,7 +137,7 @@ const tickSpeed = 40; //Default: 40
 export const keyPressed = {};
 export let zoom = 1; //Default : 1
 const gravity = 3; //Default: 3
-const moveSpeed = 8; //Default: 8
+const moveSpeed = 10; //Default: 8
 const jumpHeight = 30; //Default: 30
 export const playerHeight = 90; //Default: 100
 const reach = 6; //Default: 6
@@ -642,7 +642,7 @@ function calculateCollisions() {
     if (playerRight !== closestLeft) {
       hitRight = false;
       if (keyPressed["ControlLeft"] || keyPressed["ControlRight"]) {
-        velocity.x = moveSpeed * 2;
+        velocity.x = moveSpeed * 1.5;
       } else {
         velocity.x = moveSpeed;
       }
@@ -653,7 +653,7 @@ function calculateCollisions() {
     if (playerLeft !== closestRight) {
       hitLeft = false;
       if (keyPressed["ControlLeft"] || keyPressed["ControlRight"]) {
-        velocity.x = -moveSpeed * 2;
+        velocity.x = -moveSpeed * 1.5;
       } else {
         velocity.x = -moveSpeed;
       }
