@@ -178,6 +178,25 @@ function getDate() {
   return `${hours}:${minutes}:${seconds}`;
 }
 
+//If interract with a chunk which doesn't exists, create it
+function touchChunk(type, chunk, x) {
+  if (type === 1) {
+    if (positive_chunks[chunk] === undefined) {
+      positive_chunks[chunk] = {};
+    }
+    if (positive_chunks[chunk][x] === undefined) {
+      positive_chunks[chunk][x] = {};
+    }
+  } else {
+    if (negative_chunks[chunk] === undefined) {
+      negative_chunks[chunk] = {};
+    }
+    if (negative_chunks[chunk][x] === undefined) {
+      negative_chunks[chunk][x] = {};
+    }
+  }
+}
+
 //IO
 io.on("connection", (socket) => {
   socket.on("init", ({ id, chunks }) => {
@@ -237,11 +256,13 @@ io.on("connection", (socket) => {
       const { isNegative, chunk, x, y, type } = args;
 
       if (isNegative) {
+        touchChunk(0, chunk, x);
         if (!negative_chunks[chunk][x][y]) {
           negative_chunks[chunk][x][y] = type;
           io.emit("place_block_to_client", args);
         }
       } else {
+        touchChunk(1, chunk, x);
         if (!positive_chunks[chunk][x][y]) {
           positive_chunks[chunk][x][y] = type;
           io.emit("place_block_to_client", args);
@@ -255,8 +276,10 @@ io.on("connection", (socket) => {
       const { isNegative, chunk, x, y } = args;
       // objects.content = objects.content.filter((x) => x.id !== args);
       if (isNegative) {
+        touchChunk(0, chunk, x);
         delete negative_chunks[chunk][x][y];
       } else {
+        touchChunk(1, chunk, x);
         delete positive_chunks[chunk][x][y];
       }
       io.emit("remove_block_to_client", args);

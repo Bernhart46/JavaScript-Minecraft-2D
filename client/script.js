@@ -75,12 +75,33 @@ socket.on("user_left", (id) => {
   players = players.filter((p) => p.id !== id);
 });
 
+//If interract with a chunk which doesn't exists, create it
+function touchChunk(type, chunk, x) {
+  if (type === 1) {
+    if (chunks["positives"][chunk] === undefined) {
+      chunks["positives"][chunk] = {};
+    }
+    if (chunks["positives"][chunk][x] === undefined) {
+      chunks["positives"][chunk][x] = {};
+    }
+  } else {
+    if (chunks["negatives"][chunk] === undefined) {
+      chunks["negatives"][chunk] = {};
+    }
+    if (chunks["negatives"][chunk][x] === undefined) {
+      chunks["negatives"][chunk][x] = {};
+    }
+  }
+}
+
 socket.on("place_block_to_client", (args) => {
   const { isNegative, chunk, x, y, type } = args;
 
   if (isNegative) {
+    touchChunk(0, chunk, x);
     chunks["negatives"][chunk][x][y] = type;
   } else {
+    touchChunk(1, chunk, x);
     chunks["positives"][chunk][x][y] = type;
   }
 });
@@ -88,8 +109,10 @@ socket.on("remove_block_to_client", (args) => {
   const { isNegative, chunk, x, y } = args;
 
   if (isNegative) {
+    touchChunk(0, chunk, x);
     delete chunks["negatives"][chunk][x][y];
   } else {
+    touchChunk(1, chunk, x);
     delete chunks["positives"][chunk][x][y];
   }
   // objO.content = objO.content.filter((obj) => obj.id !== args);
@@ -618,14 +641,22 @@ function calculateCollisions() {
   if (keyPressed["KeyD"] && !isTypingOn) {
     if (playerRight !== closestLeft) {
       hitRight = false;
-      velocity.x = moveSpeed;
+      if (keyPressed["ControlLeft"] || keyPressed["ControlRight"]) {
+        velocity.x = moveSpeed * 2;
+      } else {
+        velocity.x = moveSpeed;
+      }
     }
   }
   //Move Left
   if (keyPressed["KeyA"] && !isTypingOn) {
     if (playerLeft !== closestRight) {
       hitLeft = false;
-      velocity.x = -moveSpeed;
+      if (keyPressed["ControlLeft"] || keyPressed["ControlRight"]) {
+        velocity.x = -moveSpeed * 2;
+      } else {
+        velocity.x = -moveSpeed;
+      }
     }
   }
   //Gravity | Falling

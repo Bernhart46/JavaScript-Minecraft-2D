@@ -16,10 +16,6 @@ const prevCursorPos = {
   y: 0,
 };
 
-export function getObject(x, y) {
-  return objects.content.find((obj) => obj.pos.x === x && obj.pos.y === y);
-}
-
 export function removeObject() {
   if (zoom !== 1) return;
   if (!canReach) return;
