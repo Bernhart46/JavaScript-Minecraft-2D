@@ -40,7 +40,7 @@ class Player {
   setId(newId) {
     this.id = newId;
   }
-  setName(newName = "Guest") {
+  setName(newName = `Guest #${Math.floor(Math.random() * 1000) + 1}`) {
     this.name = newName;
   }
 }
