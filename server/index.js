@@ -62,7 +62,6 @@ let playerIDs = {};
 
 let positive_chunks = {
   //0th chunk -> chunk is from y 0 to y 255
-  0: generateChunk(),
 };
 let negative_chunks = {};
 
@@ -201,13 +200,11 @@ io.on("connection", (socket) => {
       const { isNegative, chunk, x, y, type } = args;
 
       if (isNegative) {
-        touchChunk(0, chunk);
         if (!negative_chunks[chunk][x][y]) {
           negative_chunks[chunk][x][y] = type;
           io.emit("place_block_to_client", args);
         }
       } else {
-        touchChunk(1, chunk);
         if (!positive_chunks[chunk][x][y]) {
           positive_chunks[chunk][x][y] = type;
           io.emit("place_block_to_client", args);
@@ -221,10 +218,8 @@ io.on("connection", (socket) => {
       const { isNegative, chunk, x, y } = args;
       // objects.content = objects.content.filter((x) => x.id !== args);
       if (isNegative) {
-        touchChunk(0, chunk);
         delete negative_chunks[chunk][x][y];
       } else {
-        touchChunk(1, chunk);
         delete positive_chunks[chunk][x][y];
       }
       io.emit("remove_block_to_client", args);
